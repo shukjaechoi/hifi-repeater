@@ -178,4 +178,5 @@ header .app-tabs button.selected{color:#e0ebd3;border-bottom-color:#c7e69e}
   .main-controls{display:grid;grid-template-columns:1fr 1fr;gap:7px;width:100%}
   .raw-play-button,.play-button{width:100%;height:42px;padding:0 6px;font-size:11px}
   .record-button{grid-column:1/-1;width:100%;min-width:0}
+  .main-controls.single .play-button{grid-column:1/-1}
 }
