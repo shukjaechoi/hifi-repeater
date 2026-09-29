@@ -1,3 +1,4 @@
+import { reduceStringSqueak } from './de-esser';
 import { concatenate } from './audio-utils';
 import { hybridFirCalibration, iphoneKm184IirBands, loadHybridFir, type PlaybackFilter } from './filters';
 export class AudioEngine {
@@ -53,12 +54,13 @@ export class AudioEngine {
       return {samples, rate: this.context.sampleRate};
     } finally { this.release(); this.stopping = undefined; }
   }
-  async play(samples: Float32Array<ArrayBuffer>, rate: number, start: number, end: number, loop: boolean, ended: () => void, filter: PlaybackFilter = 'none') {
+  async play(samples: Float32Array<ArrayBuffer>, rate: number, start: number, end: number, loop: boolean, ended: () => void, filter: PlaybackFilter = 'none', squeakReduction = false) {
     this.stopPlayback();
     const ctx = await this.ready();
     let playbackSamples = samples;
     if (filter === 'iphone-km184-hybrid-fir') playbackSamples = await this.applyHybridFir(samples, rate, start, end);
     else if (filter === 'iphone-km184-iir') playbackSamples = await this.applyIir(samples, rate, start, end);
+    if (squeakReduction) playbackSamples = reduceStringSqueak(playbackSamples, rate);
     const buffer = ctx.createBuffer(1, samples.length, rate);
     buffer.copyToChannel(playbackSamples, 0);
     const source = ctx.createBufferSource(); source.buffer = buffer; source.connect(ctx.destination);
