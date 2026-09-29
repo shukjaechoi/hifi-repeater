@@ -38,6 +38,35 @@ footer{margin-top:34px;border-top:1px solid #29342c;padding:22px 0 28px;display:
 @media(max-width:600px){header{height:60px;padding:0 18px}.brand{font-size:18px}.local{font-size:0}.local i{width:6px;height:6px}main{padding:18px 18px 0}.workspace-heading>span{font-size:9px}.slots{gap:8px;margin-bottom:14px}.slot{min-height:82px;padding:10px 8px;border-radius:8px}.slot-top{font-size:8px;letter-spacing:1px}.slot strong{font-size:11px;white-space:nowrap;margin:9px 0}.slot-bottom{font-size:7px}.slot-bottom>span{display:none}.studio-top{padding:18px 16px 0}.studio-top .eyebrow{font-size:9px;letter-spacing:0}.divider{margin:0 8px}.status{font-size:7px;letter-spacing:.8px}.time-row{padding:16px 16px 14px}.timer{font-size:28px}.timer small{font-size:10px}.format{font-size:7px}.wave-wrap{margin:0 16px;height:124px}.wave-caption{padding:10px 16px;font-size:8px}.zoom-row{padding:0 16px 12px}.zoom-row>div{gap:5px}.zoom-row>div button{font-size:8px;padding:5px 6px}.range-controls{padding:0 16px 15px;gap:14px}.range-controls label{gap:6px}.range-controls span{font-size:8px;min-width:35px}.transport{margin:0 16px;padding:16px 0;gap:15px}.transport-side{gap:5px}.transport-side.right{font-size:8px}.chip{font-size:9px;padding:8px}.text-button{font-size:8px;padding:3px}.record-button{min-width:176px;height:49px}.studio-footer{padding:12px 16px}.studio-footer>span{font-size:7px;max-width:140px;text-align:right}.input-meter{gap:6px}.input-meter>div{width:35px}.takes{margin-top:27px}.takes-heading{align-items:start;flex-direction:column;gap:15px}.takes-heading>div:last-child{align-self:flex-end}.take-list{grid-template-columns:1fr}.take{padding:12px 15px}.no-takes{font-size:10px;line-height:1.8;padding:18px}footer{margin-top:28px;font-size:8px;gap:20px;line-height:1.8}}
 @media(max-width:600px){.silence-setting{padding:10px 16px;font-size:9px}.silence-setting small{font-size:8px}}
 
+/* Keep the core practice controls readable at a glance. */
+.slot{min-height:76px;display:flex;align-items:center}
+.slot strong{font-size:16px;line-height:1.4;margin:0}
+.timer small{font-size:16px}
+.format{font-size:14px;letter-spacing:.4px}
+.wave-caption{font-size:14px}
+.zoom-row{font-size:13px}
+.zoom-row button{font-size:13px;padding:8px 11px}
+.range-controls label,.range-controls span{font-size:14px}
+.silence-setting{font-size:14px}
+.silence-setting small{font-size:13px}
+.silence-setting input{width:18px;height:18px}
+.chip,.text-button{font-size:13px}
+.transport-side.right{font-size:13px}
+@media(max-width:600px){
+  .slot{min-height:66px;padding:10px}
+  .slot strong{font-size:14px}
+  .timer small{font-size:12px}
+  .format{font-size:11px}
+  .wave-caption{font-size:11px}
+  .zoom-row{font-size:11px}
+  .zoom-row button{font-size:11px;padding:6px 7px}
+  .range-controls label,.range-controls span{font-size:12px}
+  .silence-setting{font-size:12px}
+  .silence-setting small{font-size:11px}
+  .chip,.text-button{font-size:12px}
+  .transport-side.right{font-size:11px}
+}
+
 @media(prefers-color-scheme:light){
   :root{color:#1d2a24;background:#f4f7f2;color-scheme:light}body{background:#f4f7f2}header{border-color:#d7dfd5}.brand{color:#1d2a24}.brand>span:last-child,.local{color:#627167}.brand-mark{background:#456b4a;color:#fff}.local i,.status i,.auto-dot{background:#4d7a54}
   .workspace-heading>span,.slot-top,.slot-bottom,.timer small,.format,.wave-caption,.zoom-row,.range-controls label,.range-controls span,.transport-side.right,.studio-footer,.takes-heading p,.take small,.take-duration,footer{color:#617267}
