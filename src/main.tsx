@@ -27,6 +27,7 @@ function App() {
   const engine = useRef(new AudioEngine()).current;
   const [takes, setTakes] = useState<Take[]>([]), [slot, setSlot] = useState(0), [selected, setSelected] = useState<Record<number,string>>({});
   const [state, setState] = useState<State>('idle'), [loaded, setLoaded] = useState(false), [loop, setLoop] = useState(false);
+  const [playbackMode, setPlaybackMode] = useState<'raw'|'filtered'|null>(null);
   const [page, setPage] = useState<'practice'|'settings'>('practice');
   const [playbackFilter, setPlaybackFilter] = useState<PlaybackFilter>(() => localStorage.getItem('hifi-playback-filter') === 'iphone-km184-hybrid-fir' ? 'iphone-km184-hybrid-fir' : 'none');
   const [firAvailable, setFirAvailable] = useState(false), [firError, setFirError] = useState('');
@@ -44,10 +45,10 @@ function App() {
   useEffect(() => { allTakes().then(setTakes).catch(() => setError('작업 저장소를 열 수 없습니다. 브라우저의 저장 권한을 확인하세요.')).finally(() => setLoaded(true)); return () => {engine.stopPlayback(); engine.release();}; }, [engine]);
   useEffect(() => { loadHybridFir().then(() => setFirAvailable(true)).catch(() => setFirError('필터 파일을 불러오지 못했습니다. 네트워크 연결을 확인해 주세요.')); }, []);
   useEffect(() => { if (state !== 'playing') return; let id: number; const tick = () => {setPosition(engine.position()); id = requestAnimationFrame(tick);}; id = requestAnimationFrame(tick); return () => cancelAnimationFrame(id); }, [state, engine]);
-  const stop = () => { engine.stopPlayback(); setState('idle'); };
-  async function play(take: Take) {
-    await engine.play(take.samples, take.rate, take.start, take.end, loop, () => {setState('idle'); setPosition(take.end);}, playbackFilter);
-    setPosition(take.start); setState('playing');
+  const stop = () => { engine.stopPlayback(); setState('idle'); setPlaybackMode(null); };
+  async function play(take: Take, filter: PlaybackFilter = playbackFilter, mode: 'raw'|'filtered' = filter==='none'?'raw':'filtered') {
+    await engine.play(take.samples, take.rate, take.start, take.end, loop, () => {setState('idle'); setPlaybackMode(null); setPosition(take.end);}, filter);
+    setPosition(take.start); setPlaybackMode(mode); setState('playing');
   }
   async function record() {
     if (busy.current || !loaded) return;
@@ -93,7 +94,7 @@ function App() {
     stop(); setPosition(start); setZoom(null); void update({...active, start, end: active.end < start + .02 ? duration : active.end});
     setNotice(`앞 무음 ${time(start)}을 재생 범위에서 제외했습니다.`);
   }
-  async function togglePlay() { if (!active || busy.current) return; if (state === 'playing') {stop(); return;} busy.current = true; try {await play(active);} catch {setError('재생하지 못했습니다. 다시 시도해 주세요.'); setState('idle');} finally {busy.current = false;} }
+  async function togglePlay(mode: 'raw'|'filtered') { if (!active || busy.current) return; if (state === 'playing') {stop(); return;} busy.current = true; try {await play(active, mode==='raw'?'none':playbackFilter, mode);} catch {setError('재생하지 못했습니다. 다시 시도해 주세요.'); setState('idle'); setPlaybackMode(null);} finally {busy.current = false;} }
   function exportTake() { if (!active) return; const url = URL.createObjectURL(new Blob([wav(active.samples,active.rate)],{type:'audio/wav'})); const a = document.createElement('a'); a.href = url; a.download = `practice-${slot+1}-${new Date(active.created).toISOString().replaceAll(':','-')}.wav`; a.click(); setTimeout(() => URL.revokeObjectURL(url),10000); setNotice('원본 WAV를 내보냈습니다.'); }
   async function deleteLocalData() {
     if (locked || busy.current || !window.confirm('이 브라우저에 저장된 모든 연주와 앱 설정을 삭제합니다. 되돌릴 수 없습니다. 계속할까요?')) return;
@@ -106,9 +107,8 @@ function App() {
   }
   const status = {idle:'',preparing:'마이크 연결 중',recording:'녹음 중',finishing:'재생 준비 중',playing: loop ? '구간 반복 중' : '재생 중'}[state];
   return <div className="app">
-    <header><a className="brand" href="/" aria-label="hifi repeater 홈"><span className="brand-mark">≋</span> hifi<span> / repeater</span></a><span className="local"><i/> LOCAL PRACTICE SPACE</span></header>
+    <header><a className="brand" href="/" aria-label="hifi repeater 홈"><span className="brand-mark">≋</span> hifi<span> / repeater</span></a><nav className="app-tabs" role="tablist" aria-label="앱 화면"><button role="tab" aria-selected={page==='practice'} className={page==='practice'?'selected':''} onClick={()=>setPage('practice')}>연습</button><button role="tab" aria-selected={page==='settings'} className={page==='settings'?'selected':''} disabled={locked} onClick={()=>{stop();setPage('settings');}}>설정</button></nav></header>
     <main>
-      <nav className="app-tabs" role="tablist" aria-label="앱 화면"><button role="tab" aria-selected={page==='practice'} className={page==='practice'?'selected':''} onClick={()=>setPage('practice')}>연습</button><button role="tab" aria-selected={page==='settings'} className={page==='settings'?'selected':''} disabled={locked} onClick={()=>{stop();setPage('settings');}}>설정</button></nav>
       {page === 'practice' ? <>
       <nav className="slots" role="tablist" aria-label="연습 슬롯">{[0,1,2].map(i => {const take = takes.find(t => t.id === selected[i]) ?? takes.find(t => t.slot === i); return <button key={i} role="tab" aria-selected={slot===i} className={`slot ${slot===i?'active':''}`} disabled={locked} onClick={() => {stop();setZoom(null);setSlot(i);setPosition(0);}}><span className="slot-name">SLOT 0{i+1}</span><strong>{slotStatus(slot===i,take,recording,elapsed)}</strong></button>;})}</nav>
       <section className="studio" aria-label="녹음 및 반복 재생">
@@ -118,7 +118,7 @@ function App() {
         <div className="wave-caption"><span>{recording?'연주를 듣고 있어요': '파형을 드래그해 반복할 구간을 선택하세요'}</span><span>{time(recording?elapsed:duration)}</span></div>
         <div className="zoom-row"><span>{zoom ? `${time(viewStart)} — ${time(viewEnd)}` : "전체 파형"}</span><div><button disabled={!active||locked} onClick={skipLeadingSilence}>시작 무음 건너뛰기</button><button disabled={!active||locked} onClick={()=>setZoom(zoom?null:[active!.start,active!.end])}>{zoom?"전체 보기":"선택 구간 확대"}</button></div></div><div className="range-controls"><label>A <input aria-label="구간 시작" type="range" min="0" max={duration||1} step="0.01" value={active?.start??0} disabled={!active||locked} onChange={e=>range(Number(e.target.value),active!.end)}/><span>{time(active?.start??0)}</span></label><label>B <input aria-label="구간 끝" type="range" min="0" max={duration||1} step="0.01" value={active?.end??0} disabled={!active||locked} onChange={e=>range(active!.start,Number(e.target.value))}/><span>{time(active?.end??0)}</span></label></div>
         <div className="silence-setting"><label><input type="checkbox" checked={autoTrimSilence} onChange={e=>{setAutoTrimSilence(e.target.checked);localStorage.setItem('hifi-auto-trim-silence',String(e.target.checked));}}/><span>시작 무음 건너뛰기</span></label><small>{autoTrimSilence?'켜짐 · 연주 시작점부터 자동 재생':'꺼짐 · 전체 녹음을 재생'}</small></div>
-        <div className="transport"><div className="transport-side"><button className={`chip ${loop?'enabled':''}`} aria-pressed={loop} disabled={locked} onClick={()=>{stop();setLoop(!loop);}}>↻ 구간 반복 {loop?'ON':'OFF'}</button><button className="text-button" disabled={!active||locked} onClick={()=>range(0,duration)}>전체 구간</button></div><div className="main-controls"><button className="play-button" aria-label={state==='playing'?'재생 정지':'선택 구간 재생'} disabled={!active||locked} onClick={()=>void togglePlay()}>{state==='playing'?'■':'▶'}</button><button className={`record-button ${recording?'recording':''}`} disabled={!loaded||state==='preparing'||state==='finishing'} onClick={()=>void record()}><span className={recording?'square':'circle'}/>{recording?'정지하고 듣기':state==='preparing'?'마이크 연결 중':state==='finishing'?'재생 준비 중':'녹음 시작'}</button></div><div className="transport-side right"><span className="auto-dot"/> 정지하면 자동 재생</div></div>
+        <div className="transport"><div className="transport-side"><button className={`chip ${loop?'enabled':''}`} aria-pressed={loop} disabled={locked} onClick={()=>{stop();setLoop(!loop);}}>↻ 구간 반복 {loop?'ON':'OFF'}</button><button className="text-button" disabled={!active||locked} onClick={()=>range(0,duration)}>전체 구간</button></div><div className="main-controls"><button className="raw-play-button" aria-label={state==='playing'&&playbackMode==='raw'?'재생 정지':'Raw play'} aria-pressed={state==='playing'&&playbackMode==='raw'} disabled={!active||locked} onClick={()=>void togglePlay('raw')}>{state==='playing'&&playbackMode==='raw'?'■ ':''}Raw play</button><button className="play-button" aria-label={state==='playing'&&playbackMode==='filtered'?'재생 정지':'Filtered play'} aria-pressed={state==='playing'&&playbackMode==='filtered'} disabled={!active||locked} title={playbackFilter==='none'?'설정 탭에서 필터를 선택하면 보정 음원을 비교할 수 있습니다.':'선택한 필터를 적용해 재생합니다.'} onClick={()=>void togglePlay('filtered')}>{state==='playing'&&playbackMode==='filtered'?'■ ':''}Filtered play</button><button className={`record-button ${recording?'recording':''}`} disabled={!loaded||state==='preparing'||state==='finishing'} onClick={()=>void record()}><span className={recording?'square':'circle'}/>{recording?'정지하고 듣기':state==='preparing'?'마이크 연결 중':state==='finishing'?'재생 준비 중':'녹음 시작'}</button></div><div className="transport-side right"><span className="auto-dot"/> 정지하면 자동 재생</div></div>
         <div className="studio-footer"><div className="input-meter"><span>INPUT</span><div><i style={{width:`${Math.min(100,level*100)}%`,background:clipped?'#eb8a77':undefined}}/></div><span>{clipped?'피크 주의':recording?'LIVE':'대기'}</span></div><span>파일 이름 없이, 연습에만 집중하세요.</span></div>
       </section>
       {error && <div role="alert" className="message error">{error}</div>}{notice && <div role="status" className="message">{notice}</div>}
