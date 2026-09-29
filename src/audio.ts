@@ -1,6 +1,7 @@
 import { reduceStringSqueak } from './de-esser';
 import { concatenate } from './audio-utils';
 import { hybridFirCalibration, iphoneKm184IirBands, loadHybridFir, type PlaybackFilter } from './filters';
+import { processHybridTcn } from './tcn';
 export class AudioEngine {
   context?: AudioContext;
   stream?: MediaStream;
@@ -60,6 +61,7 @@ export class AudioEngine {
     let playbackSamples = samples;
     if (filter === 'iphone-km184-hybrid-fir') playbackSamples = await this.applyHybridFir(samples, rate, start, end);
     else if (filter === 'iphone-km184-iir') playbackSamples = await this.applyIir(samples, rate, start, end);
+    else if (filter === 'iphone-hybrid-fir-tcn128') playbackSamples = await this.applyHybridTcn(samples, rate, start, end);
     if (squeakReduction) playbackSamples = reduceStringSqueak(playbackSamples, rate);
     const buffer = ctx.createBuffer(1, samples.length, rate);
     buffer.copyToChannel(playbackSamples, 0);
@@ -117,6 +119,46 @@ export class AudioEngine {
     previous.connect(offline.destination); source.start();
     const output = (await offline.startRendering()).getChannelData(0).slice();
     return this.matchPlaybackLevel(samples, output, rate, start, end);
+  }
+  private async applyHybridTcn(samples: Float32Array<ArrayBuffer>, rate: number, start: number, end: number): Promise<Float32Array<ArrayBuffer>> {
+    const calibration=hybridFirCalibration;
+    const modelInput=await this.resample(samples,rate,48000);
+    const input=new Float32Array(modelInput.length);
+    for(let i=0;i<input.length;i++) input[i]=(modelInput[i]*calibration.inputPolarity-calibration.inputDc)*calibration.inputGain*calibration.sharedScale;
+    const taps=await loadHybridFir();
+    const base=await this.convolveCentered(input,taps,48000);
+    const envelope=new Float32Array(input.length),prefix=new Float64Array(input.length+1);
+    for(let i=0;i<input.length;i++)prefix[i+1]=prefix[i]+input[i]*input[i];
+    for(let i=0;i<input.length;i++){
+      const first=Math.max(0,i-479),last=Math.min(input.length,i+481);
+      envelope[i]=Math.sqrt(Math.max((prefix[last]-prefix[first])/960,1e-10));
+    }
+    const {residual,bandTaps}=await processHybridTcn(input,base,envelope);
+    const filteredResidual=await this.convolveCentered(residual,bandTaps,48000);
+    const converted48=new Float32Array(input.length);
+    for(let i=0;i<converted48.length;i++) converted48[i]=(base[i]+filteredResidual[i])/calibration.sharedScale+calibration.targetDc;
+    const output=await this.resample(converted48,48000,rate);
+    return this.matchPlaybackLevel(samples,output,rate,start,end);
+  }
+  private async resample(samples:Float32Array<ArrayBuffer>,sourceRate:number,targetRate:number):Promise<Float32Array<ArrayBuffer>>{
+    if(sourceRate===targetRate)return samples;
+    const length=Math.max(1,Math.round(samples.length*targetRate/sourceRate));
+    const offline=new OfflineAudioContext(1,length,targetRate);
+    const buffer=offline.createBuffer(1,samples.length,sourceRate);buffer.copyToChannel(samples,0);
+    const source=offline.createBufferSource();source.buffer=buffer;source.connect(offline.destination);source.start();
+    return (await offline.startRendering()).getChannelData(0).slice();
+  }
+  private async convolveCentered(samples:Float32Array<ArrayBuffer>,taps:Float32Array<ArrayBuffer>,rate:number):Promise<Float32Array<ArrayBuffer>>{
+    const length=samples.length+taps.length-1;
+    const offline=new OfflineAudioContext(1,length,rate);
+    const input=offline.createBuffer(1,samples.length,rate);input.copyToChannel(samples,0);
+    const impulse=offline.createBuffer(1,taps.length,rate);impulse.copyToChannel(taps,0);
+    const source=offline.createBufferSource();source.buffer=input;
+    const convolver=offline.createConvolver();convolver.normalize=false;convolver.buffer=impulse;
+    source.connect(convolver);convolver.connect(offline.destination);source.start();
+    const rendered=(await offline.startRendering()).getChannelData(0);
+    const offset=(taps.length-1)/2;
+    return rendered.slice(offset,offset+samples.length);
   }
   private matchPlaybackLevel(samples: Float32Array<ArrayBuffer>, output: Float32Array<ArrayBuffer>, rate: number, start: number, end: number) {
     const first = Math.max(0, Math.min(samples.length - 1, Math.floor(start * rate)));

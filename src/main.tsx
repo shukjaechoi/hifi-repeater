@@ -4,6 +4,7 @@ import { AudioEngine } from './audio';
 import { allTakes, clearTakes, putTake, type Take } from './storage';
 import { leadingSoundOffset, validRange, wav } from './audio-utils';
 import { loadHybridFir, type PlaybackFilter } from './filters';
+import { tcnGpuAvailable } from './tcn';
 import { Waveform } from './Waveform';
 import './style.css';
 type State = 'idle' | 'preparing' | 'recording' | 'finishing' | 'playing';
@@ -31,7 +32,7 @@ function App() {
   const [page, setPage] = useState<'practice'|'settings'>('practice');
   const [playbackFilter, setPlaybackFilter] = useState<PlaybackFilter>(() => {
     const stored = localStorage.getItem('hifi-playback-filter');
-    return stored === 'iphone-km184-hybrid-fir' || stored === 'iphone-km184-iir' ? stored : 'none';
+    return stored === 'iphone-km184-hybrid-fir' || stored === 'iphone-km184-iir' || stored === 'iphone-hybrid-fir-tcn128' ? stored : 'none';
   });
   const [squeakReduction, setSqueakReduction] = useState(() => localStorage.getItem('hifi-squeak-reduction') === 'true');
   const hasPlaybackProcessing = playbackFilter !== 'none' || squeakReduction;
@@ -101,7 +102,7 @@ function App() {
     stop(); setPosition(start); setZoom(null); void update({...active, start, end: active.end < start + .02 ? duration : active.end});
     setNotice(`앞 무음 ${time(start)}을 재생 범위에서 제외했습니다.`);
   }
-  async function togglePlay(mode: 'raw'|'filtered') { if (!active || busy.current) return; if (state === 'playing') {stop(); return;} busy.current = true; try {await play(active, mode==='raw'?'none':playbackFilter, mode);} catch {setError('재생하지 못했습니다. 다시 시도해 주세요.'); setState('idle'); setPlaybackMode(null);} finally {busy.current = false;} }
+  async function togglePlay(mode: 'raw'|'filtered') { if (!active || busy.current) return; if (state === 'playing') {stop(); return;} busy.current = true; if(mode==='filtered')setState('finishing'); try {await play(active, mode==='raw'?'none':playbackFilter, mode);} catch (e) {setError(e instanceof Error?e.message:'재생하지 못했습니다. 다시 시도해 주세요.'); setState('idle'); setPlaybackMode(null);} finally {busy.current = false;} }
   function exportTake() { if (!active) return; const url = URL.createObjectURL(new Blob([wav(active.samples,active.rate)],{type:'audio/wav'})); const a = document.createElement('a'); a.href = url; a.download = `practice-${slot+1}-${new Date(active.created).toISOString().replaceAll(':','-')}.wav`; a.click(); setTimeout(() => URL.revokeObjectURL(url),10000); setNotice('원본 WAV를 내보냈습니다.'); }
   async function deleteLocalData() {
     if (locked || busy.current || !window.confirm('이 브라우저에 저장된 모든 연주와 앱 설정을 삭제합니다. 되돌릴 수 없습니다. 계속할까요?')) return;
@@ -144,8 +145,9 @@ function App() {
         <section className="settings-card" aria-labelledby="filters-title"><div className="settings-title"><h2 id="filters-title">적용할 필터</h2><p>선택한 필터는 녹음 원본을 바꾸지 않고 재생할 때 적용됩니다.</p></div>
           <label className="filter-option"><input type="checkbox" checked={playbackFilter==='iphone-km184-hybrid-fir'} disabled={!firAvailable && playbackFilter!=='iphone-km184-hybrid-fir'} onChange={event=>{const next: PlaybackFilter=event.target.checked?'iphone-km184-hybrid-fir':'none';setPlaybackFilter(next);localStorage.setItem('hifi-playback-filter',next);}}/><span><strong>iPhone to km184 - 4097-tap FIR</strong><small>Hybrid 기준 · train-only · 48 kHz · epoch 0 FIR</small></span></label>
           <label className="filter-option"><input type="checkbox" checked={playbackFilter==='iphone-km184-iir'} onChange={event=>{const next: PlaybackFilter=event.target.checked?'iphone-km184-iir':'none';setPlaybackFilter(next);localStorage.setItem('hifi-playback-filter',next);}}/><span><strong>iPhone to km184 - IIR</strong><small>6개 넓은 피킹 밴드 · 최소 위상 · 재생 시 원본 음량에 맞춤</small></span></label>
+          <label className="filter-option"><input type="checkbox" checked={playbackFilter==='iphone-hybrid-fir-tcn128'} disabled={!tcnGpuAvailable()} onChange={event=>{const next: PlaybackFilter=event.target.checked?'iphone-hybrid-fir-tcn128':'none';setPlaybackFilter(next);localStorage.setItem('hifi-playback-filter',next);}}/><span><strong>iPhone - Hybrid FIR + TCN128</strong><small>epoch 123 · 70 Hz–4 kHz 잔차 · WebGPU 필요 · 첫 재생 시 약 2.5 MB 다운로드</small></span></label>
           <p className="filter-none">마이크 보정: <strong>{playbackFilter!=='none'?'필터 적용 중':'None'}</strong></p>
-          <p className="filter-description">두 필터 모두 한 iPhone과 KM184의 동시 녹음 쌍으로 만든 실험용 보정입니다. IIR은 넓은 최소 위상 EQ 밴드의 캐스케이드이고, FIR은 학습 구간 기준의 4,097-tap 선형 위상 필터입니다. 다른 기기나 녹음 설정에서는 결과가 다를 수 있습니다. 선택 구간 음량은 원본과 비슷하게 맞추며 피크가 클리핑될 수 있으면 제한합니다. 원본 녹음과 WAV 내보내기는 보정 전 데이터를 유지합니다.</p>
+          <p className="filter-description">이 보정들은 한 iPhone과 KM184의 동시 녹음 쌍을 사용한 실험입니다. IIR은 넓은 최소 위상 EQ이고, FIR은 train-only 4,097-tap 기준입니다. TCN128은 그 FIR 출력에 작은 신경망 잔차를 더합니다. 다른 기기나 녹음 설정에서는 결과가 달라질 수 있습니다. 선택 구간 음량은 원본과 비슷하게 맞추며, 원본 녹음과 WAV 내보내기는 보정 전 데이터를 유지합니다.</p>
           {!firAvailable && <p className="filter-error">{firError || '필터 파일을 불러오는 중…'}</p>}
         </section>
         <section className="settings-card" aria-labelledby="other-filters-title"><div className="settings-title"><h2 id="other-filters-title">기타 필터</h2><p>마이크 보정과 독립적으로 켜고 끌 수 있는 재생 필터입니다.</p></div>

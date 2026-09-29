@@ -1,4 +1,4 @@
-export type PlaybackFilter = 'none' | 'iphone-km184-hybrid-fir' | 'iphone-km184-iir';
+export type PlaybackFilter = 'none' | 'iphone-km184-hybrid-fir' | 'iphone-km184-iir' | 'iphone-hybrid-fir-tcn128';
 
 export const iphoneKm184IirBands = [
   { frequency: 100, q: 0.75, gainDb: 3.3 },

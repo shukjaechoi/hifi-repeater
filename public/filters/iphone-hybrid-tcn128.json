@@ -1,0 +1,375 @@
+{
+  "sampleRate": 48000,
+  "channels": 128,
+  "layers": 10,
+  "receptiveFieldSamples": 2047,
+  "residualScale": 0.1,
+  "selectedEpoch": 123,
+  "validationRelativeSpectrumMaeDb": 1.9429706936083946,
+  "floatCount": 666752,
+  "weights": {
+    "input.weight": {
+      "offset": 0,
+      "length": 384,
+      "shape": [
+        128,
+        3,
+        1
+      ]
+    },
+    "input.bias": {
+      "offset": 384,
+      "length": 128,
+      "shape": [
+        128
+      ]
+    },
+    "blocks.0.conv.weight": {
+      "offset": 512,
+      "length": 49152,
+      "shape": [
+        128,
+        128,
+        3
+      ]
+    },
+    "blocks.0.conv.bias": {
+      "offset": 49664,
+      "length": 128,
+      "shape": [
+        128
+      ]
+    },
+    "blocks.0.mix.weight": {
+      "offset": 49792,
+      "length": 16384,
+      "shape": [
+        128,
+        128,
+        1
+      ]
+    },
+    "blocks.0.mix.bias": {
+      "offset": 66176,
+      "length": 128,
+      "shape": [
+        128
+      ]
+    },
+    "blocks.1.conv.weight": {
+      "offset": 66304,
+      "length": 49152,
+      "shape": [
+        128,
+        128,
+        3
+      ]
+    },
+    "blocks.1.conv.bias": {
+      "offset": 115456,
+      "length": 128,
+      "shape": [
+        128
+      ]
+    },
+    "blocks.1.mix.weight": {
+      "offset": 115584,
+      "length": 16384,
+      "shape": [
+        128,
+        128,
+        1
+      ]
+    },
+    "blocks.1.mix.bias": {
+      "offset": 131968,
+      "length": 128,
+      "shape": [
+        128
+      ]
+    },
+    "blocks.2.conv.weight": {
+      "offset": 132096,
+      "length": 49152,
+      "shape": [
+        128,
+        128,
+        3
+      ]
+    },
+    "blocks.2.conv.bias": {
+      "offset": 181248,
+      "length": 128,
+      "shape": [
+        128
+      ]
+    },
+    "blocks.2.mix.weight": {
+      "offset": 181376,
+      "length": 16384,
+      "shape": [
+        128,
+        128,
+        1
+      ]
+    },
+    "blocks.2.mix.bias": {
+      "offset": 197760,
+      "length": 128,
+      "shape": [
+        128
+      ]
+    },
+    "blocks.3.conv.weight": {
+      "offset": 197888,
+      "length": 49152,
+      "shape": [
+        128,
+        128,
+        3
+      ]
+    },
+    "blocks.3.conv.bias": {
+      "offset": 247040,
+      "length": 128,
+      "shape": [
+        128
+      ]
+    },
+    "blocks.3.mix.weight": {
+      "offset": 247168,
+      "length": 16384,
+      "shape": [
+        128,
+        128,
+        1
+      ]
+    },
+    "blocks.3.mix.bias": {
+      "offset": 263552,
+      "length": 128,
+      "shape": [
+        128
+      ]
+    },
+    "blocks.4.conv.weight": {
+      "offset": 263680,
+      "length": 49152,
+      "shape": [
+        128,
+        128,
+        3
+      ]
+    },
+    "blocks.4.conv.bias": {
+      "offset": 312832,
+      "length": 128,
+      "shape": [
+        128
+      ]
+    },
+    "blocks.4.mix.weight": {
+      "offset": 312960,
+      "length": 16384,
+      "shape": [
+        128,
+        128,
+        1
+      ]
+    },
+    "blocks.4.mix.bias": {
+      "offset": 329344,
+      "length": 128,
+      "shape": [
+        128
+      ]
+    },
+    "blocks.5.conv.weight": {
+      "offset": 329472,
+      "length": 49152,
+      "shape": [
+        128,
+        128,
+        3
+      ]
+    },
+    "blocks.5.conv.bias": {
+      "offset": 378624,
+      "length": 128,
+      "shape": [
+        128
+      ]
+    },
+    "blocks.5.mix.weight": {
+      "offset": 378752,
+      "length": 16384,
+      "shape": [
+        128,
+        128,
+        1
+      ]
+    },
+    "blocks.5.mix.bias": {
+      "offset": 395136,
+      "length": 128,
+      "shape": [
+        128
+      ]
+    },
+    "blocks.6.conv.weight": {
+      "offset": 395264,
+      "length": 49152,
+      "shape": [
+        128,
+        128,
+        3
+      ]
+    },
+    "blocks.6.conv.bias": {
+      "offset": 444416,
+      "length": 128,
+      "shape": [
+        128
+      ]
+    },
+    "blocks.6.mix.weight": {
+      "offset": 444544,
+      "length": 16384,
+      "shape": [
+        128,
+        128,
+        1
+      ]
+    },
+    "blocks.6.mix.bias": {
+      "offset": 460928,
+      "length": 128,
+      "shape": [
+        128
+      ]
+    },
+    "blocks.7.conv.weight": {
+      "offset": 461056,
+      "length": 49152,
+      "shape": [
+        128,
+        128,
+        3
+      ]
+    },
+    "blocks.7.conv.bias": {
+      "offset": 510208,
+      "length": 128,
+      "shape": [
+        128
+      ]
+    },
+    "blocks.7.mix.weight": {
+      "offset": 510336,
+      "length": 16384,
+      "shape": [
+        128,
+        128,
+        1
+      ]
+    },
+    "blocks.7.mix.bias": {
+      "offset": 526720,
+      "length": 128,
+      "shape": [
+        128
+      ]
+    },
+    "blocks.8.conv.weight": {
+      "offset": 526848,
+      "length": 49152,
+      "shape": [
+        128,
+        128,
+        3
+      ]
+    },
+    "blocks.8.conv.bias": {
+      "offset": 576000,
+      "length": 128,
+      "shape": [
+        128
+      ]
+    },
+    "blocks.8.mix.weight": {
+      "offset": 576128,
+      "length": 16384,
+      "shape": [
+        128,
+        128,
+        1
+      ]
+    },
+    "blocks.8.mix.bias": {
+      "offset": 592512,
+      "length": 128,
+      "shape": [
+        128
+      ]
+    },
+    "blocks.9.conv.weight": {
+      "offset": 592640,
+      "length": 49152,
+      "shape": [
+        128,
+        128,
+        3
+      ]
+    },
+    "blocks.9.conv.bias": {
+      "offset": 641792,
+      "length": 128,
+      "shape": [
+        128
+      ]
+    },
+    "blocks.9.mix.weight": {
+      "offset": 641920,
+      "length": 16384,
+      "shape": [
+        128,
+        128,
+        1
+      ]
+    },
+    "blocks.9.mix.bias": {
+      "offset": 658304,
+      "length": 128,
+      "shape": [
+        128
+      ]
+    },
+    "head.weight": {
+      "offset": 658432,
+      "length": 128,
+      "shape": [
+        1,
+        128,
+        1
+      ]
+    },
+    "head.bias": {
+      "offset": 658560,
+      "length": 1,
+      "shape": [
+        1
+      ]
+    }
+  },
+  "residualBand": {
+    "offset": 658561,
+    "length": 8191
+  },
+  "calibration": {
+    "polarity": -1,
+    "input_dc": -1.556084416504529e-05,
+    "input_gain": 0.32236124172299196,
+    "shared_scale": 2.6776594562397706,
+    "target_dc": -1.3585624694824218e-05
+  }
+}
