@@ -1,4 +1,13 @@
-export type PlaybackFilter = 'none' | 'iphone-km184-hybrid-fir';
+export type PlaybackFilter = 'none' | 'iphone-km184-hybrid-fir' | 'iphone-km184-iir';
+
+export const iphoneKm184IirBands = [
+  { frequency: 100, q: 0.75, gainDb: 3.3 },
+  { frequency: 180, q: 0.9, gainDb: 4.7 },
+  { frequency: 320, q: 0.95, gainDb: 3.0 },
+  { frequency: 650, q: 0.9, gainDb: -0.7 },
+  { frequency: 1300, q: 0.85, gainDb: -0.1 },
+  { frequency: 2800, q: 1.0, gainDb: 0.6 },
+] as const;
 
 const firUrl = new URL('filters/iphone-to-km184-4097.f32le', document.baseURI);
 let hybridFirPromise: Promise<Float32Array<ArrayBuffer>> | undefined;

@@ -1,5 +1,5 @@
 import { concatenate } from './audio-utils';
-import { hybridFirCalibration, loadHybridFir, type PlaybackFilter } from './filters';
+import { hybridFirCalibration, iphoneKm184IirBands, loadHybridFir, type PlaybackFilter } from './filters';
 export class AudioEngine {
   context?: AudioContext;
   stream?: MediaStream;
@@ -58,6 +58,7 @@ export class AudioEngine {
     const ctx = await this.ready();
     let playbackSamples = samples;
     if (filter === 'iphone-km184-hybrid-fir') playbackSamples = await this.applyHybridFir(samples, rate, start, end);
+    else if (filter === 'iphone-km184-iir') playbackSamples = await this.applyIir(samples, rate, start, end);
     const buffer = ctx.createBuffer(1, samples.length, rate);
     buffer.copyToChannel(playbackSamples, 0);
     const source = ctx.createBufferSource(); source.buffer = buffer; source.connect(ctx.destination);
@@ -98,6 +99,24 @@ export class AudioEngine {
     const output = new Float32Array(samples.length);
     for (let i = 0; i < output.length; i++) output[i] = centered[i] / calibration.sharedScale + calibration.targetDc;
 
+    return this.matchPlaybackLevel(samples, output, rate, start, end);
+  }
+  private async applyIir(samples: Float32Array<ArrayBuffer>, rate: number, start: number, end: number): Promise<Float32Array<ArrayBuffer>> {
+    const offline = new OfflineAudioContext(1, samples.length, rate);
+    const input = offline.createBuffer(1, samples.length, rate);
+    input.copyToChannel(samples, 0);
+    const source = offline.createBufferSource(); source.buffer = input;
+    let previous: AudioNode = source;
+    for (const band of iphoneKm184IirBands) {
+      const filter = offline.createBiquadFilter();
+      filter.type = 'peaking'; filter.frequency.value = band.frequency; filter.Q.value = band.q; filter.gain.value = band.gainDb;
+      previous.connect(filter); previous = filter;
+    }
+    previous.connect(offline.destination); source.start();
+    const output = (await offline.startRendering()).getChannelData(0).slice();
+    return this.matchPlaybackLevel(samples, output, rate, start, end);
+  }
+  private matchPlaybackLevel(samples: Float32Array<ArrayBuffer>, output: Float32Array<ArrayBuffer>, rate: number, start: number, end: number) {
     const first = Math.max(0, Math.min(samples.length - 1, Math.floor(start * rate)));
     const last = Math.max(first + 1, Math.min(samples.length, Math.ceil(end * rate)));
     let sourcePower = 0, filteredPower = 0, filteredPeak = 0;

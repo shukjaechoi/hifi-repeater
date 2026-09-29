@@ -132,6 +132,13 @@ footer{margin-top:34px;border-top:1px solid #29342c;padding:22px 0 28px;display:
 .filter-none strong{color:#d9e8cd}
 .settings-card .filter-description{font-size:12px}
 .filter-error{font-size:12px;color:#e9ad99}
+.mic-settings-summary{margin-top:18px;padding:12px 14px;border:1px solid #505b4e;border-radius:7px;color:#d4d8be;font-size:14px;font-weight:600}
+.mic-settings-summary.off{border-color:#53704a;color:#c9e4aa}
+.mic-settings-summary.on{border-color:#936d52;color:#f0bd91}
+.mic-settings-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0 0}
+.mic-settings-list div{padding:11px 12px;border-radius:7px;background:#202923}
+.mic-settings-list dt{color:#99aa9a;font-size:12px}
+.mic-settings-list dd{margin:6px 0 0;color:#e0e9dc;font-size:14px;font-weight:600}
 .storage-summary{display:flex;align-items:baseline;gap:12px;margin-top:18px}
 .storage-summary strong{font-size:24px;font-variant-numeric:tabular-nums;color:#d3e4c7}
 .storage-summary span{font-size:13px;color:#9aa99a}
@@ -149,6 +156,12 @@ footer{justify-content:flex-end}
   .filter-option{border-color:#d2ddd1}
   .filter-option strong,.filter-none strong{color:#29452f}
   .filter-option small{color:#66786a}
+  .mic-settings-summary{border-color:#d2ddd1;color:#526052}
+  .mic-settings-summary.off{border-color:#a8c39d;color:#355d38}
+  .mic-settings-summary.on{border-color:#d0a384;color:#8c4a2e}
+  .mic-settings-list div{background:#f3f6f1}
+  .mic-settings-list dt{color:#617267}
+  .mic-settings-list dd{color:#29452f}
   .storage-summary strong{color:#355d38}
   .delete-data{color:#8c4536;border-color:#cb9b8d}
   .delete-data:hover:not(:disabled){background:#fff0eb}
@@ -161,6 +174,9 @@ footer{justify-content:flex-end}
   .filter-option{padding:12px;gap:10px}
   .filter-option strong{font-size:12px}
   .filter-option small,.filter-none{font-size:11px}
+  .mic-settings-list{grid-template-columns:1fr;gap:6px}
+  .mic-settings-list div{display:flex;align-items:center;justify-content:space-between;padding:10px 12px}
+  .mic-settings-list dd{margin:0}
 }
 header .app-tabs{margin:0 0 0 auto;gap:18px;border:0;align-items:center}
 header .app-tabs button{padding:9px 4px;font-size:14px;color:#95a395;border-bottom:2px solid transparent}
