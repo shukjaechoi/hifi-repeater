@@ -75,3 +75,36 @@ footer{margin-top:34px;border-top:1px solid #29342c;padding:22px 0 28px;display:
   button{border-color:#cbd6ca;background:#fff}button:hover:not(:disabled){background:#edf4eb;border-color:#7c9c79}.chip.enabled{color:#355d38;border-color:#7f9e79;background:#e8f2e5}.text-button{color:#566d59}.play-button{color:#38583c}.record-button{background:#5b865d;color:#fff}.record-button:hover:not(:disabled){background:#476e4a}.circle{background:#fff}.studio-footer .input-meter>div{background:#d6e1d4}.input-meter i{background:#5b865d}
   .take{background:#fff}.take.selected{border-color:#739570}.take-icon{color:#527c56}.no-takes{border-color:#bfccbe;color:#607360}.message{border-color:#9ab296;background:#edf5e9}.message.error{border-color:#c99383;color:#8c4536;background:#fff0eb}
 }
+
+.slots{display:flex;gap:6px;border-bottom:1px solid #354037;margin-bottom:0}
+.slot{position:relative;flex:1;min-height:72px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:8px;padding:12px 17px;border:0;border-radius:8px 8px 0 0;background:transparent}
+.slot:hover:not(:disabled){background:#1b2720}
+.slot.active{background:#18201c;border:1px solid #354037;border-bottom-color:#18201c;margin-bottom:-1px;z-index:1}
+.slot-name{font-size:12px;letter-spacing:1px;color:#829184}
+.slot.active .slot-name{color:#c7e69e}
+.slot strong{font-size:14px;color:#b2beb0}
+.slot.active strong{color:#e2ead9}
+.studio{border-top-left-radius:0;border-top-right-radius:0}
+.takes-heading h2{text-transform:none;font-size:16px;font-weight:600;letter-spacing:.1px}
+.take{gap:12px}
+.take-wave{flex:0 0 84px;width:84px;height:28px;overflow:visible}
+.take-wave rect{fill:#aeca90}
+@media(prefers-color-scheme:light){
+  .slots{border-bottom-color:#ced9ce}
+  .slot:hover:not(:disabled){background:#f4f8f2}
+  .slot.active{background:#fff;border-color:#ced9ce;border-bottom-color:#fff}
+  .slot-name{color:#647568}
+  .slot.active .slot-name{color:#4e7552}
+  .slot strong{color:#536358}
+  .slot.active strong{color:#25392a}
+  .take-wave rect{fill:#527c56}
+}
+@media(max-width:600px){
+  .slots{gap:2px}
+  .slot{min-height:66px;padding:10px 9px;gap:6px}
+  .slot-name{font-size:10px;letter-spacing:.5px}
+  .slot strong{font-size:11px;white-space:nowrap}
+  .takes-heading h2{font-size:14px}
+  .take-wave{flex-basis:62px;width:62px}
+  .take{gap:8px}
+}

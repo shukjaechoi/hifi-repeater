@@ -12,6 +12,15 @@ const slotStatus = (current: boolean, take: Take | undefined, recording: boolean
   return '대기중';
 };
 const time = (s: number) => `${Math.floor(s/60).toString().padStart(2,'0')}:${Math.floor(s%60).toString().padStart(2,'0')}.${Math.floor(s%1*10)}`;
+function TakeWaveform({samples}: {samples: Float32Array}) {
+  const bars = Array.from({length:48}, (_,i) => {
+    const from = Math.floor(i * samples.length / 48), to = Math.max(from + 1, Math.floor((i + 1) * samples.length / 48));
+    let peak = 0;
+    for (let j = from; j < to; j++) peak = Math.max(peak, Math.abs(samples[j] ?? 0));
+    return {x:i * 2.2, y:14 - Math.max(1.2, peak * 12), height:Math.max(2.4, peak * 24)};
+  });
+  return <svg className="take-wave" viewBox="0 0 106 28" aria-hidden="true">{bars.map((bar,i)=><rect key={i} x={bar.x} y={bar.y} width="1.5" height={bar.height} rx=".7"/>)}</svg>;
+}
 function App() {
   const engine = useRef(new AudioEngine()).current;
   const [takes, setTakes] = useState<Take[]>([]), [slot, setSlot] = useState(0), [selected, setSelected] = useState<Record<number,string>>({});
@@ -83,7 +92,7 @@ function App() {
   return <div className="app">
     <header><a className="brand" href="/" aria-label="hifi repeater 홈"><span className="brand-mark">≋</span> hifi<span> / repeater</span></a><span className="local"><i/> LOCAL PRACTICE SPACE</span></header>
     <main>
-      <nav className="slots" aria-label="연습 공간">{[0,1,2].map(i => {const take = takes.find(t => t.id === selected[i]) ?? takes.find(t => t.slot === i); return <button key={i} className={`slot ${slot===i?'active':''}`} disabled={locked} aria-pressed={slot===i} onClick={() => {stop();setZoom(null);setSlot(i);setPosition(0);}}><strong>{slotStatus(slot===i,take,recording,elapsed)}</strong></button>;})}</nav>
+      <nav className="slots" role="tablist" aria-label="연습 슬롯">{[0,1,2].map(i => {const take = takes.find(t => t.id === selected[i]) ?? takes.find(t => t.slot === i); return <button key={i} role="tab" aria-selected={slot===i} className={`slot ${slot===i?'active':''}`} disabled={locked} onClick={() => {stop();setZoom(null);setSlot(i);setPosition(0);}}><span className="slot-name">SLOT 0{i+1}</span><strong>{slotStatus(slot===i,take,recording,elapsed)}</strong></button>;})}</nav>
       <section className="studio" aria-label="녹음 및 반복 재생">
         {status && <div className="studio-top"><span className={`status ${recording?'red':''}`}><i/>{status}</span></div>}
         <div className="time-row"><div className="timer">{time(recording?elapsed:position)}<small> / {time(recording?elapsed:duration)}</small></div><span className="format">MONO <span>·</span> {active ? `${(active.rate/1000).toFixed(1)} kHz` : '48 kHz'}</span></div>
@@ -95,8 +104,8 @@ function App() {
         <div className="studio-footer"><div className="input-meter"><span>INPUT</span><div><i style={{width:`${Math.min(100,level*100)}%`,background:clipped?'#eb8a77':undefined}}/></div><span>{clipped?'피크 주의':recording?'LIVE':'대기'}</span></div><span>파일 이름 없이, 연습에만 집중하세요.</span></div>
       </section>
       {error && <div role="alert" className="message error">{error}</div>}{notice && <div role="status" className="message">{notice}</div>}
-      <section className="takes"><div className="takes-heading"><div><h2>이 공간의 연주 <span>{takes.filter(t=>t.slot===slot).length.toString().padStart(2,'0')}</span></h2><p>이전 연주를 선택해 지금의 소리와 비교해 보세요.</p></div><div><button disabled={!active||locked} onClick={()=>{if(active) void update({...active,saved:!active.saved});}}>{active?.saved?'★ 보관됨':'☆ 따로 보관'}</button><button disabled={!active||locked} onClick={exportTake}>↗ WAV 내보내기</button></div></div>
-      <div className="take-list">{takes.filter(t=>t.slot===slot).map((t,i,arr)=><button key={t.id} disabled={locked} className={`take ${active?.id===t.id?'selected':''}`} onClick={()=>{stop();setZoom(null);setSelected(previous=>({...previous,[slot]:t.id}));setPosition(t.start);}}><span className="take-icon">{active?.id===t.id?'≋':'▷'}</span><span><strong>Take {String(arr.length-i).padStart(2,'0')} {t.saved?'★':''}</strong><small>{new Date(t.created).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}</small></span><span className="take-duration">{time(t.samples.length/t.rate)}</span></button>)}{!takes.some(t=>t.slot===slot)&&<div className="no-takes">아직 녹음된 연주가 없습니다. 새 녹음은 이 공간에 자동으로 남아요.</div>}</div></section>
+      <section className="takes"><div className="takes-heading"><h2>SLOT #{slot+1} history <span>{takes.filter(t=>t.slot===slot).length.toString().padStart(2,'0')}</span></h2><div><button disabled={!active||locked} onClick={()=>{if(active) void update({...active,saved:!active.saved});}}>{active?.saved?'★ 보관됨':'☆ 따로 보관'}</button><button disabled={!active||locked} onClick={exportTake}>↗ WAV 내보내기</button></div></div>
+      <div className="take-list">{takes.filter(t=>t.slot===slot).map((t,i,arr)=><button key={t.id} disabled={locked} className={`take ${active?.id===t.id?'selected':''}`} onClick={()=>{stop();setZoom(null);setSelected(previous=>({...previous,[slot]:t.id}));setPosition(t.start);}}><TakeWaveform samples={t.samples}/><span><strong>Take {String(arr.length-i).padStart(2,'0')} {t.saved?'★':''}</strong><small>{new Date(t.created).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}</small></span><span className="take-duration">{time(t.samples.length/t.rate)}</span></button>)}{!takes.some(t=>t.slot===slot)&&<div className="no-takes">아직 녹음된 연주가 없습니다. 새 녹음은 이 공간에 자동으로 남아요.</div>}</div></section>
       <footer><span>내 소리를 듣는 가장 짧은 거리.</span><span>기기 내 작업 저장 · 외부 업로드 없음</span></footer>
     </main>
   </div>;
