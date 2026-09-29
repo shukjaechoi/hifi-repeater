@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.DS_Store
+test-results/
+playwright-report/
+.certs/
+experiments/mic-modeling/.venv/
+experiments/mic-modeling/vendor/
+experiments/mic-modeling/data/
+experiments/mic-modeling/runs/
+experiments/mic-modeling/__pycache__/

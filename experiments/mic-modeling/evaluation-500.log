@@ -1,0 +1,60 @@
+{
+  "test_seconds": 14.723541666666666,
+  "reference_start_seconds": 61.0,
+  "full_run": "full-500-global-xcorr",
+  "models": {
+    "lite": {
+      "epoch": 3,
+      "validation_esr": 0.5090980529785156,
+      "export_max_absolute_error": 3.2782554626464844e-07
+    },
+    "full": {
+      "epoch": 470,
+      "validation_esr": 0.3310588300228119,
+      "export_max_absolute_error": 3.2782554626464844e-07
+    }
+  },
+  "metrics": {
+    "iphone": {
+      "esr": 1.1338472366333008,
+      "snr_db": -0.545545459534659,
+      "mr_spectral_convergence": 0.5040862560272217,
+      "correlation": 0.35831309268292605,
+      "peak": 0.763376772403717,
+      "rms": 0.10963240265846252
+    },
+    "gain_only": {
+      "esr": 0.8954856395721436,
+      "snr_db": 0.4794137430917917,
+      "mr_spectral_convergence": 0.6152393221855164,
+      "correlation": 0.3583130926462703,
+      "peak": 0.44976723194122314,
+      "rms": 0.0645933523774147
+    },
+    "fir": {
+      "esr": 0.4088219984903198,
+      "snr_db": 3.8846574309372417,
+      "mr_spectral_convergence": 0.43550689795882924,
+      "correlation": 0.768881070307768,
+      "peak": 0.8862338405527254,
+      "rms": 0.0968752062167245
+    },
+    "lite": {
+      "esr": 0.42956653237342834,
+      "snr_db": 3.6696956197268324,
+      "mr_spectral_convergence": 0.4940755069255829,
+      "correlation": 0.777779713303599,
+      "peak": 0.8492243885993958,
+      "rms": 0.07474479079246521
+    },
+    "full": {
+      "esr": 0.20492969453334808,
+      "snr_db": 6.883951073011182,
+      "mr_spectral_convergence": 0.3041161398092906,
+      "correlation": 0.8958541174681399,
+      "peak": 1.1079648733139038,
+      "rms": 0.10194846242666245
+    }
+  },
+  "note": "No per-test gain fitting or time alignment. All tracks share original reference level. Lower ESR and spectral convergence are better."
+}

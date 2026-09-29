@@ -1,0 +1,16 @@
+{
+  "sources": {
+    "iphone": {
+      "path": "/Users/sjchoi/dev/mic-fr/iphone.wav",
+      "sha256": "68c70d3969528be3b164ee7ce39b186e259d8636b0f91b1de77f20b113b0ecec"
+    },
+    "km184": {
+      "path": "/Users/sjchoi/dev/mic-fr/km184.wav",
+      "sha256": "afd88347747875d308009d3206c335d2ca1cd8d4a60f3bf300dece3788a47746"
+    }
+  },
+  "repositories": {
+    "neural-amp-modeler": "0072676419459f5d39e36f5b9fd4172f28d62cbf",
+    "mic-fr": "ace60033e2c5d93e3b0ee134a3e8d9babb8e2d4a"
+  }
+}
