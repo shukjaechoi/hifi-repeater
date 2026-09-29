@@ -12,6 +12,7 @@ const slotStatus = (current: boolean, take: Take | undefined, recording: boolean
   return '대기중';
 };
 const time = (s: number) => `${Math.floor(s/60).toString().padStart(2,'0')}:${Math.floor(s%60).toString().padStart(2,'0')}.${Math.floor(s%1*10)}`;
+const bytesLabel = (bytes: number) => bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(0)} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 function TakeWaveform({samples}: {samples: Float32Array}) {
   const bars = Array.from({length:48}, (_,i) => {
     const from = Math.floor(i * samples.length / 48), to = Math.max(from + 1, Math.floor((i + 1) * samples.length / 48));
@@ -32,6 +33,7 @@ function App() {
   const busy = useRef(false), settings = useRef<MediaTrackSettings>({}), frames = useRef(0), liveChunks = useRef<number[]>([]);
   const active = takes.find(t => t.id === selected[slot]) ?? takes.find(t => t.slot === slot);
   const duration = active ? active.samples.length/active.rate : 0;
+  const audioStorageBytes = takes.reduce((total,take) => total + take.samples.byteLength, 0);
   const viewStart = zoom?.[0] ?? 0, viewEnd = zoom?.[1] ?? duration;
   const visibleSamples = useMemo(() => active && zoom ? active.samples.subarray(Math.floor(viewStart * active.rate), Math.ceil(viewEnd * active.rate)) : active?.samples, [active?.samples, active?.rate, zoom, viewStart, viewEnd]);
   const recording = state === 'recording', locked = recording || state === 'preparing' || state === 'finishing';
@@ -106,6 +108,7 @@ function App() {
       {error && <div role="alert" className="message error">{error}</div>}{notice && <div role="status" className="message">{notice}</div>}
       <section className="takes"><div className="takes-heading"><h2>SLOT #{slot+1} history <span>{takes.filter(t=>t.slot===slot).length.toString().padStart(2,'0')}</span></h2><div><button disabled={!active||locked} onClick={()=>{if(active) void update({...active,saved:!active.saved});}}>{active?.saved?'★ 보관됨':'☆ 따로 보관'}</button><button disabled={!active||locked} onClick={exportTake}>↗ WAV 내보내기</button></div></div>
       <div className="take-list">{takes.filter(t=>t.slot===slot).map((t,i,arr)=><button key={t.id} disabled={locked} className={`take ${active?.id===t.id?'selected':''}`} onClick={()=>{stop();setZoom(null);setSelected(previous=>({...previous,[slot]:t.id}));setPosition(t.start);}}><TakeWaveform samples={t.samples}/><span><strong>Take {String(arr.length-i).padStart(2,'0')} {t.saved?'★':''}</strong><small>{new Date(t.created).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}</small></span><span className="take-duration">{time(t.samples.length/t.rate)}</span></button>)}{!takes.some(t=>t.slot===slot)&&<div className="no-takes">아직 녹음된 연주가 없습니다. 새 녹음은 이 공간에 자동으로 남아요.</div>}</div></section>
+      <aside className="storage-note"><strong>기기 내 녹음 {bytesLabel(audioStorageBytes)}</strong><span>연주 PCM 데이터 기준의 대략적인 크기입니다. 녹음은 자동 삭제되지 않으며, 브라우저의 이 사이트 저장 데이터를 지우면 함께 삭제됩니다. 중요한 연주는 WAV로 내보내 보관하세요.</span></aside>
       <footer><span>내 소리를 듣는 가장 짧은 거리.</span><span>기기 내 작업 저장 · 외부 업로드 없음</span></footer>
     </main>
   </div>;

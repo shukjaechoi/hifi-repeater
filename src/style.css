@@ -108,3 +108,10 @@ footer{margin-top:34px;border-top:1px solid #29342c;padding:22px 0 28px;display:
   .take-wave{flex-basis:62px;width:62px}
   .take{gap:8px}
 }
+.storage-note{display:flex;flex-direction:column;gap:7px;margin-top:22px;padding:14px 16px;border:1px solid #303b32;border-radius:8px;background:#161f1a;color:#a3b19f;font-size:12px;line-height:1.6}
+.storage-note strong{font-size:13px;color:#d1dfc7;font-weight:600}
+@media(prefers-color-scheme:light){
+  .storage-note{border-color:#d5ded3;background:#f6f9f5;color:#536358}
+  .storage-note strong{color:#29452f}
+}
+@media(max-width:600px){.storage-note{font-size:11px;margin-top:18px;padding:12px 13px}.storage-note strong{font-size:12px}}
