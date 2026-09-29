@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AudioEngine } from './audio';
-import { allTakes, putTake, type Take } from './storage';
+import { allTakes, clearTakes, putTake, type Take } from './storage';
 import { leadingSoundOffset, validRange, wav } from './audio-utils';
+import { loadHybridFir, type PlaybackFilter } from './filters';
 import { Waveform } from './Waveform';
 import './style.css';
 type State = 'idle' | 'preparing' | 'recording' | 'finishing' | 'playing';
@@ -26,6 +27,9 @@ function App() {
   const engine = useRef(new AudioEngine()).current;
   const [takes, setTakes] = useState<Take[]>([]), [slot, setSlot] = useState(0), [selected, setSelected] = useState<Record<number,string>>({});
   const [state, setState] = useState<State>('idle'), [loaded, setLoaded] = useState(false), [loop, setLoop] = useState(false);
+  const [page, setPage] = useState<'practice'|'settings'>('practice');
+  const [playbackFilter, setPlaybackFilter] = useState<PlaybackFilter>(() => localStorage.getItem('hifi-playback-filter') === 'iphone-km184-hybrid-fir' ? 'iphone-km184-hybrid-fir' : 'none');
+  const [firAvailable, setFirAvailable] = useState(false), [firError, setFirError] = useState('');
   const [autoTrimSilence, setAutoTrimSilence] = useState(() => localStorage.getItem('hifi-auto-trim-silence') === 'true');
   const [zoom, setZoom] = useState<[number, number] | null>(null);
   const [position, setPosition] = useState(0), [elapsed, setElapsed] = useState(0), [level, setLevel] = useState(0), [clipped, setClipped] = useState(false);
@@ -38,10 +42,11 @@ function App() {
   const visibleSamples = useMemo(() => active && zoom ? active.samples.subarray(Math.floor(viewStart * active.rate), Math.ceil(viewEnd * active.rate)) : active?.samples, [active?.samples, active?.rate, zoom, viewStart, viewEnd]);
   const recording = state === 'recording', locked = recording || state === 'preparing' || state === 'finishing';
   useEffect(() => { allTakes().then(setTakes).catch(() => setError('작업 저장소를 열 수 없습니다. 브라우저의 저장 권한을 확인하세요.')).finally(() => setLoaded(true)); return () => {engine.stopPlayback(); engine.release();}; }, [engine]);
+  useEffect(() => { loadHybridFir().then(() => setFirAvailable(true)).catch(() => setFirError('필터 파일을 불러오지 못했습니다. 네트워크 연결을 확인해 주세요.')); }, []);
   useEffect(() => { if (state !== 'playing') return; let id: number; const tick = () => {setPosition(engine.position()); id = requestAnimationFrame(tick);}; id = requestAnimationFrame(tick); return () => cancelAnimationFrame(id); }, [state, engine]);
   const stop = () => { engine.stopPlayback(); setState('idle'); };
   async function play(take: Take) {
-    await engine.play(take.samples, take.rate, take.start, take.end, loop, () => {setState('idle'); setPosition(take.end);});
+    await engine.play(take.samples, take.rate, take.start, take.end, loop, () => {setState('idle'); setPosition(take.end);}, playbackFilter);
     setPosition(take.start); setState('playing');
   }
   async function record() {
@@ -90,10 +95,21 @@ function App() {
   }
   async function togglePlay() { if (!active || busy.current) return; if (state === 'playing') {stop(); return;} busy.current = true; try {await play(active);} catch {setError('재생하지 못했습니다. 다시 시도해 주세요.'); setState('idle');} finally {busy.current = false;} }
   function exportTake() { if (!active) return; const url = URL.createObjectURL(new Blob([wav(active.samples,active.rate)],{type:'audio/wav'})); const a = document.createElement('a'); a.href = url; a.download = `practice-${slot+1}-${new Date(active.created).toISOString().replaceAll(':','-')}.wav`; a.click(); setTimeout(() => URL.revokeObjectURL(url),10000); setNotice('원본 WAV를 내보냈습니다.'); }
+  async function deleteLocalData() {
+    if (locked || busy.current || !window.confirm('이 브라우저에 저장된 모든 연주와 앱 설정을 삭제합니다. 되돌릴 수 없습니다. 계속할까요?')) return;
+    try {
+      await clearTakes();
+      for (const key of Object.keys(localStorage)) if (key.startsWith('hifi-')) localStorage.removeItem(key);
+      setTakes([]); setSelected({}); setPosition(0); setElapsed(0); setAutoTrimSilence(false); setPlaybackFilter('none');
+      setNotice('이 브라우저의 연주와 앱 설정을 삭제했습니다.'); setError('');
+    } catch { setError('로컬 데이터를 삭제하지 못했습니다. 브라우저 저장소 권한을 확인해 주세요.'); }
+  }
   const status = {idle:'',preparing:'마이크 연결 중',recording:'녹음 중',finishing:'재생 준비 중',playing: loop ? '구간 반복 중' : '재생 중'}[state];
   return <div className="app">
     <header><a className="brand" href="/" aria-label="hifi repeater 홈"><span className="brand-mark">≋</span> hifi<span> / repeater</span></a><span className="local"><i/> LOCAL PRACTICE SPACE</span></header>
     <main>
+      <nav className="app-tabs" role="tablist" aria-label="앱 화면"><button role="tab" aria-selected={page==='practice'} className={page==='practice'?'selected':''} onClick={()=>setPage('practice')}>연습</button><button role="tab" aria-selected={page==='settings'} className={page==='settings'?'selected':''} disabled={locked} onClick={()=>{stop();setPage('settings');}}>설정</button></nav>
+      {page === 'practice' ? <>
       <nav className="slots" role="tablist" aria-label="연습 슬롯">{[0,1,2].map(i => {const take = takes.find(t => t.id === selected[i]) ?? takes.find(t => t.slot === i); return <button key={i} role="tab" aria-selected={slot===i} className={`slot ${slot===i?'active':''}`} disabled={locked} onClick={() => {stop();setZoom(null);setSlot(i);setPosition(0);}}><span className="slot-name">SLOT 0{i+1}</span><strong>{slotStatus(slot===i,take,recording,elapsed)}</strong></button>;})}</nav>
       <section className="studio" aria-label="녹음 및 반복 재생">
         {status && <div className="studio-top"><span className={`status ${recording?'red':''}`}><i/>{status}</span></div>}
@@ -109,7 +125,17 @@ function App() {
       <section className="takes"><div className="takes-heading"><h2>SLOT #{slot+1} history <span>{takes.filter(t=>t.slot===slot).length.toString().padStart(2,'0')}</span></h2><div><button disabled={!active||locked} onClick={()=>{if(active) void update({...active,saved:!active.saved});}}>{active?.saved?'★ 보관됨':'☆ 따로 보관'}</button><button disabled={!active||locked} onClick={exportTake}>↗ WAV 내보내기</button></div></div>
       <div className="take-list">{takes.filter(t=>t.slot===slot).map((t,i,arr)=><button key={t.id} disabled={locked} className={`take ${active?.id===t.id?'selected':''}`} onClick={()=>{stop();setZoom(null);setSelected(previous=>({...previous,[slot]:t.id}));setPosition(t.start);}}><TakeWaveform samples={t.samples}/><span><strong>Take {String(arr.length-i).padStart(2,'0')} {t.saved?'★':''}</strong><small>{new Date(t.created).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}</small></span><span className="take-duration">{time(t.samples.length/t.rate)}</span></button>)}{!takes.some(t=>t.slot===slot)&&<div className="no-takes">아직 녹음된 연주가 없습니다. 새 녹음은 이 공간에 자동으로 남아요.</div>}</div></section>
       <aside className="storage-note"><strong>기기 내 녹음 {bytesLabel(audioStorageBytes)}</strong><span>연주 PCM 데이터 기준의 대략적인 크기입니다. 녹음은 자동 삭제되지 않으며, 브라우저의 이 사이트 저장 데이터를 지우면 함께 삭제됩니다. 중요한 연주는 WAV로 내보내 보관하세요.</span></aside>
-      <footer><span>내 소리를 듣는 가장 짧은 거리.</span><span>기기 내 작업 저장 · 외부 업로드 없음</span></footer>
+      </> : <section className="settings-page">
+        <section className="settings-card" aria-labelledby="filters-title"><div className="settings-title"><h2 id="filters-title">적용할 필터</h2><p>선택한 필터는 녹음 원본을 바꾸지 않고 재생할 때 적용됩니다.</p></div>
+          <label className="filter-option"><input type="checkbox" checked={playbackFilter==='iphone-km184-hybrid-fir'} disabled={!firAvailable && playbackFilter==='none'} onChange={event=>{const next: PlaybackFilter=event.target.checked?'iphone-km184-hybrid-fir':'none';setPlaybackFilter(next);localStorage.setItem('hifi-playback-filter',next);}}/><span><strong>iPhone to km184 - 4097-tap FIR</strong><small>Hybrid 기준 · train-only · 48 kHz · epoch 0 FIR</small></span></label>
+          <p className="filter-none">기본 재생: <strong>{playbackFilter==='none'?'None':'필터 적용 중'}</strong></p>
+          <p className="filter-description">이 필터는 한 iPhone과 KM184의 동시 녹음 쌍으로 만든 실험용 보정입니다. 입력의 극성·레벨 보정도 포함되며, 다른 휴대전화나 녹음 설정에서는 결과가 다를 수 있습니다. 원본 녹음과 WAV 내보내기는 보정 전 데이터를 유지합니다.</p>
+          {!firAvailable && <p className="filter-error">{firError || '필터 파일을 불러오는 중…'}</p>}
+        </section>
+        <section className="settings-card" aria-labelledby="local-data-title"><div className="settings-title"><h2 id="local-data-title">로컬 데이터</h2><p>이 브라우저에 저장된 연습 녹음과 앱 설정입니다.</p></div><div className="storage-summary"><strong>{bytesLabel(audioStorageBytes)}</strong><span>연주 PCM · {takes.length}개 테이크</span></div><p className="filter-description">녹음은 자동으로 만료되거나 삭제되지 않습니다. 브라우저에서 이 사이트의 저장 데이터를 지우면 함께 사라집니다.</p><button className="delete-data" disabled={locked} onClick={()=>void deleteLocalData()}>로컬 데이터 모두 삭제</button></section>
+        {error && <div role="alert" className="message error">{error}</div>}{notice && <div role="status" className="message">{notice}</div>}
+      </section>}
+      <footer><span>기기 내 작업 저장 · 외부 업로드 없음</span></footer>
     </main>
   </div>;
 }

@@ -1,4 +1,5 @@
 import { concatenate } from './audio-utils';
+import { hybridFirCalibration, loadHybridFir, type PlaybackFilter } from './filters';
 export class AudioEngine {
   context?: AudioContext;
   stream?: MediaStream;
@@ -52,15 +53,51 @@ export class AudioEngine {
       return {samples, rate: this.context.sampleRate};
     } finally { this.release(); this.stopping = undefined; }
   }
-  async play(samples: Float32Array<ArrayBuffer>, rate: number, start: number, end: number, loop: boolean, ended: () => void) {
+  async play(samples: Float32Array<ArrayBuffer>, rate: number, start: number, end: number, loop: boolean, ended: () => void, filter: PlaybackFilter = 'none') {
     this.stopPlayback();
-    const ctx = await this.ready(), buffer = ctx.createBuffer(1, samples.length, rate);
-    buffer.copyToChannel(samples, 0);
+    const ctx = await this.ready();
+    let playbackSamples = samples;
+    if (filter === 'iphone-km184-hybrid-fir') playbackSamples = await this.applyHybridFir(samples, rate);
+    const buffer = ctx.createBuffer(1, samples.length, rate);
+    buffer.copyToChannel(playbackSamples, 0);
     const source = ctx.createBufferSource(); source.buffer = buffer; source.connect(ctx.destination);
     source.loop = loop; source.loopStart = start; source.loopEnd = end;
     source.onended = () => { if (this.source === source) { this.source = undefined; source.disconnect(); ended(); } };
     this.source = source; this.started = ctx.currentTime; this.from = start; this.to = end; this.looping = loop;
     if (loop) source.start(0, start); else source.start(0, start, end - start);
+  }
+  private async applyHybridFir(samples: Float32Array<ArrayBuffer>, rate: number): Promise<Float32Array<ArrayBuffer>> {
+    const taps = await loadHybridFir();
+    let tapsAtRate = taps;
+    if (rate !== 48000) {
+      const halfLength = Math.round((taps.length - 1) * rate / 48000 / 2);
+      const resampler = new OfflineAudioContext(1, halfLength * 2 + 1, rate);
+      const originalImpulse = resampler.createBuffer(1, taps.length, 48000);
+      originalImpulse.copyToChannel(taps, 0);
+      const impulseSource = resampler.createBufferSource(); impulseSource.buffer = originalImpulse;
+      impulseSource.connect(resampler.destination); impulseSource.start();
+      tapsAtRate = (await resampler.startRendering()).getChannelData(0).slice();
+    }
+    const outputLength = samples.length + tapsAtRate.length - 1;
+    const offline = new OfflineAudioContext(1, outputLength, rate);
+    const input = offline.createBuffer(1, samples.length, rate);
+    const calibrated = new Float32Array(samples.length);
+    const calibration = hybridFirCalibration;
+    const inputScale = calibration.inputGain * calibration.sharedScale;
+    for (let i = 0; i < samples.length; i++) calibrated[i] = (samples[i] * calibration.inputPolarity - calibration.inputDc) * inputScale;
+    input.copyToChannel(calibrated, 0);
+
+    const impulse = offline.createBuffer(1, tapsAtRate.length, rate);
+    impulse.copyToChannel(tapsAtRate, 0);
+    const source = offline.createBufferSource(); source.buffer = input;
+    const convolver = offline.createConvolver(); convolver.normalize = false;
+    convolver.buffer = impulse;
+    source.connect(convolver); convolver.connect(offline.destination); source.start();
+    const rendered = await offline.startRendering();
+    const centered = rendered.getChannelData(0).subarray((tapsAtRate.length - 1) / 2, (tapsAtRate.length - 1) / 2 + samples.length);
+    const output = new Float32Array(samples.length);
+    for (let i = 0; i < output.length; i++) output[i] = centered[i] / calibration.sharedScale + calibration.targetDc;
+    return output;
   }
   position() {
     const elapsed = (this.context?.currentTime ?? 0) - this.started;

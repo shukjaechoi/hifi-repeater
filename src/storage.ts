@@ -19,3 +19,11 @@ export async function putTake(take: Take): Promise<void> {
     tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error);
   });
 }
+export async function clearTakes(): Promise<void> {
+  const database = await db;
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction('takes', 'readwrite');
+    tx.objectStore('takes').clear();
+    tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error);
+  });
+}
