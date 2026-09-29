@@ -57,7 +57,7 @@ export class AudioEngine {
     this.stopPlayback();
     const ctx = await this.ready();
     let playbackSamples = samples;
-    if (filter === 'iphone-km184-hybrid-fir') playbackSamples = await this.applyHybridFir(samples, rate);
+    if (filter === 'iphone-km184-hybrid-fir') playbackSamples = await this.applyHybridFir(samples, rate, start, end);
     const buffer = ctx.createBuffer(1, samples.length, rate);
     buffer.copyToChannel(playbackSamples, 0);
     const source = ctx.createBufferSource(); source.buffer = buffer; source.connect(ctx.destination);
@@ -66,7 +66,7 @@ export class AudioEngine {
     this.source = source; this.started = ctx.currentTime; this.from = start; this.to = end; this.looping = loop;
     if (loop) source.start(0, start); else source.start(0, start, end - start);
   }
-  private async applyHybridFir(samples: Float32Array<ArrayBuffer>, rate: number): Promise<Float32Array<ArrayBuffer>> {
+  private async applyHybridFir(samples: Float32Array<ArrayBuffer>, rate: number, start: number, end: number): Promise<Float32Array<ArrayBuffer>> {
     const taps = await loadHybridFir();
     let tapsAtRate = taps;
     if (rate !== 48000) {
@@ -97,6 +97,23 @@ export class AudioEngine {
     const centered = rendered.getChannelData(0).subarray((tapsAtRate.length - 1) / 2, (tapsAtRate.length - 1) / 2 + samples.length);
     const output = new Float32Array(samples.length);
     for (let i = 0; i < output.length; i++) output[i] = centered[i] / calibration.sharedScale + calibration.targetDc;
+
+    const first = Math.max(0, Math.min(samples.length - 1, Math.floor(start * rate)));
+    const last = Math.max(first + 1, Math.min(samples.length, Math.ceil(end * rate)));
+    let sourcePower = 0, filteredPower = 0, filteredPeak = 0;
+    for (let i = first; i < last; i++) {
+      const sourceSample = samples[i] ?? 0, filteredSample = output[i] ?? 0;
+      sourcePower += sourceSample * sourceSample;
+      filteredPower += filteredSample * filteredSample;
+      filteredPeak = Math.max(filteredPeak, Math.abs(filteredSample));
+    }
+    const sourceRms = Math.sqrt(sourcePower / (last - first));
+    const filteredRms = Math.sqrt(filteredPower / (last - first));
+    if (sourceRms > 1e-6 && filteredRms > 1e-6) {
+      let gain = Math.max(0.2512, Math.min(3.9811, sourceRms / filteredRms));
+      if (filteredPeak > 0) gain = Math.min(gain, 0.98 / filteredPeak);
+      for (let i = 0; i < output.length; i++) output[i] *= gain;
+    }
     return output;
   }
   position() {
