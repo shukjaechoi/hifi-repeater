@@ -8,10 +8,10 @@ test('record → automatic loop → second slot → persistence and WAV export',
   await expect(page.getByRole('button',{name:'정지하고 듣기'})).toBeEnabled();
   await page.waitForTimeout(1200);
   await page.getByRole('button',{name:'정지하고 듣기'}).click();
-  await expect(page.getByText('LOOPING',{exact:true})).toBeVisible();
+  await expect(page.getByText('구간 반복 중',{exact:true})).toBeVisible();
   await expect(page.getByText('Take 01',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'재생 정지',exact:true}).click();
-  await page.getByRole('button',{name:'앞 무음 제외'}).click();
+  await page.getByRole('button',{name:'시작 무음 건너뛰기'}).click();
   await expect(page.getByRole('status')).toContainText('앞 무음');
   await page.getByRole('slider',{name:'구간 시작'}).fill('0.2');
   await page.getByRole('button',{name:'선택 구간 확대'}).click();
@@ -20,13 +20,13 @@ test('record → automatic loop → second slot → persistence and WAV export',
   const downloadPromise=page.waitForEvent('download');
   await page.getByRole('button',{name:'WAV 내보내기'}).click();
   const download=await downloadPromise; expect(download.suggestedFilename()).toMatch(/\.wav$/);
-  await page.getByRole('button',{name:/SLOT 02/}).click();
+  await page.getByRole('tab',{name:/SLOT 02/}).click();
   await expect(page.getByText('아직 녹음된 연주가 없습니다.',{exact:false})).toBeVisible();
   await page.getByRole('button',{name:'녹음 시작',exact:true}).click();
   await expect(page.getByRole('button',{name:'정지하고 듣기'})).toBeEnabled();
   await page.waitForTimeout(500);
   await page.getByRole('button',{name:'정지하고 듣기'}).click();
-  await expect(page.getByText('LOOPING',{exact:true})).toBeVisible();
+  await expect(page.getByText('구간 반복 중',{exact:true})).toBeVisible();
   await page.reload();
   await expect(page.getByText('Take 01 ★',{exact:true})).toBeVisible();
   await expect(page.getByRole('slider',{name:'구간 시작'})).toHaveValue('0.2');
@@ -38,10 +38,10 @@ test('record → automatic loop → second slot → persistence and WAV export',
   expect(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(errors).toEqual([]);
 });
-test('microphone denial returns to a usable idle state', async ({browser})=>{
+test('microphone denial returns to a usable idle state', async ({browser,baseURL})=>{
   const context=await browser.newContext({permissions:[]});const page=await context.newPage();
   await page.addInitScript(()=>{ navigator.mediaDevices.getUserMedia=async()=>{throw new DOMException('Microphone denied','NotAllowedError');}; });
-  await page.goto('http://localhost:5173');
+  await page.goto(baseURL!);
   await page.getByRole('button',{name:'녹음 시작',exact:true}).click();
   await expect(page.getByRole('alert')).toContainText('Microphone denied');
   await expect(page.getByRole('button',{name:'녹음 시작',exact:true})).toBeEnabled();
@@ -54,11 +54,11 @@ test('default automatic playback ends and a new take preserves the previous one'
   for (let i=1;i<=2;i++) {
     await page.getByRole('button',{name:'녹음 시작',exact:true}).click();
     await expect(page.getByRole('button',{name:'정지하고 듣기'})).toBeEnabled();
-    await expect(page.getByRole('button',{name:/SLOT 02/})).toBeDisabled();
+    await expect(page.getByRole('tab',{name:/SLOT 02/})).toBeDisabled();
     await page.waitForTimeout(900);
     await page.getByRole('button',{name:'정지하고 듣기'}).click();
-    await expect(page.getByText('PLAYING',{exact:true})).toBeVisible();
-    await expect(page.getByText('READY TO LISTEN',{exact:true})).toBeVisible();
+    await expect(page.getByText('재생 중',{exact:true})).toBeVisible();
+    await expect(page.getByRole('button',{name:'녹음 시작',exact:true})).toBeEnabled();
     await expect(page.getByText(`Take 0${i}`,{exact:true})).toBeVisible();
   }
   await expect(page.getByText('Take 01',{exact:true})).toBeVisible();

@@ -15,19 +15,27 @@ test('loop selection remains ordered and within recording',()=>{
   const [start,end]=validRange(5,0,3); assert.ok(start<end); assert.equal(end,3);
 });
 
-test('recorder worklet flushes partial PCM before completion without monitoring input', async()=>{
+test('recorder worklet separates take capture from continuous input and flushes the final block', async()=>{
   const { readFile } = await import('node:fs/promises');
   const { runInNewContext } = await import('node:vm');
   let Recorder: any; const sent: any[]=[];
   class Processor { port={postMessage:(data: any)=>sent.push(data),onmessage:null as any}; }
   runInNewContext(await readFile(new URL('../public/recorder-worklet.js',import.meta.url),'utf8'),{AudioWorkletProcessor:Processor,registerProcessor:(_:string,ctor:any)=>{Recorder=ctor;},Float32Array});
   const recorder=new Recorder();
+  recorder.port.onmessage({data:'start'});
   recorder.process([[new Float32Array(4096).fill(.25)]]);
   recorder.process([[new Float32Array([.5,-.5])]]);
   recorder.port.onmessage({data:'stop'});
   assert.equal(sent[0].samples.length,4096);
   assert.deepEqual([...sent[1].samples],[.5,-.5]);
   assert.deepEqual(sent[2].done,true);
-  recorder.process([[new Float32Array([1])]]);
-  assert.equal(sent.length,3);
+  assert.equal(sent[0].recording,true);
+  recorder.process([[new Float32Array(4096).fill(.1)]]);
+  assert.equal(sent.length,4);
+  assert.equal(sent[3].recording,false);
+  recorder.port.onmessage({data:'start'});
+  recorder.process([[new Float32Array([.75])]]);
+  recorder.port.onmessage({data:'stop'});
+  assert.equal(sent[4].recording,true);
+  assert.deepEqual([...sent[4].samples],[.75]);
 });

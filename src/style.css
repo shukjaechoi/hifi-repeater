@@ -196,3 +196,8 @@ header .app-tabs button.selected{color:#e0ebd3;border-bottom-color:#c7e69e}
   .record-button{grid-column:1/-1;width:100%;min-width:0}
   .main-controls.single .play-button{grid-column:1/-1}
 }
+
+.trigger-actions{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}
+.trigger-actions button,.trigger-status button{padding:9px 14px;border:1px solid #697960;border-radius:6px;background:transparent;color:inherit;cursor:pointer}
+.trigger-actions button:disabled{opacity:.45;cursor:default}
+.trigger-status{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;color:#8da77d}

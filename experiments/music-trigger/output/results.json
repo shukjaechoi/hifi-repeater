@@ -1,0 +1,395 @@
+{
+  "manifest": {
+    "source": "/Users/sjchoi/dev/mic-fr/iphone.wav",
+    "sha256": "68c70d3969528be3b164ee7ce39b186e259d8636b0f91b1de77f20b113b0ecec",
+    "rate": 48000,
+    "source_trigger_start": 15.200000000000012,
+    "trigger_duration": 1.2,
+    "rms": 0.15979412041356125,
+    "band_edges_hz": [
+      80,
+      110.83344199051797,
+      153.5506482933188,
+      212.73183587779963,
+      294.72251989123106,
+      408.3138913958002,
+      565.6854249492382,
+      783.7107841374109,
+      1085.767046637963,
+      1504.241237234558,
+      2084.002923834766,
+      2887.2152145863784,
+      4000
+    ],
+    "band_relative_db": [
+      -18.286021594734667,
+      -2.5728040008573987,
+      -3.3186832069208574,
+      -0.5817890877705402,
+      0,
+      -3.485037319570017,
+      -3.89860092913251,
+      -9.216496555088884,
+      -19.45666017917909,
+      -19.34394136172733,
+      -23.12245709117939,
+      -35.90953278370587
+    ],
+    "bands_within_20db": 10,
+    "duration": 35,
+    "conditions": [
+      {
+        "name": "gapped",
+        "events": [
+          {
+            "start": 3,
+            "end": 4.2,
+            "gain": 1
+          },
+          {
+            "start": 9,
+            "end": 10.2,
+            "gain": 1
+          },
+          {
+            "start": 15,
+            "end": 16.2,
+            "gain": 1
+          },
+          {
+            "start": 21,
+            "end": 22.2,
+            "gain": 1
+          },
+          {
+            "start": 28,
+            "end": 29.2,
+            "gain": 1
+          }
+        ],
+        "peak": 0.853240966796875
+      },
+      {
+        "name": "gapped_levels",
+        "events": [
+          {
+            "start": 3,
+            "end": 4.2,
+            "gain": 0.5
+          },
+          {
+            "start": 9,
+            "end": 10.2,
+            "gain": 0.75
+          },
+          {
+            "start": 15,
+            "end": 16.2,
+            "gain": 1
+          },
+          {
+            "start": 21,
+            "end": 22.2,
+            "gain": 0.6
+          },
+          {
+            "start": 28,
+            "end": 29.2,
+            "gain": 0.9
+          }
+        ],
+        "peak": 0.853240966796875
+      },
+      {
+        "name": "continuous_replace",
+        "events": [
+          {
+            "start": 3,
+            "end": 4.2,
+            "gain": 1
+          },
+          {
+            "start": 9,
+            "end": 10.2,
+            "gain": 1
+          },
+          {
+            "start": 15,
+            "end": 16.2,
+            "gain": 1
+          },
+          {
+            "start": 21,
+            "end": 22.2,
+            "gain": 1
+          },
+          {
+            "start": 28,
+            "end": 29.2,
+            "gain": 1
+          }
+        ],
+        "peak": 0.8626708984375
+      },
+      {
+        "name": "overlay",
+        "events": [
+          {
+            "start": 3,
+            "end": 4.2,
+            "gain": 1
+          },
+          {
+            "start": 9,
+            "end": 10.2,
+            "gain": 1
+          },
+          {
+            "start": 15,
+            "end": 16.2,
+            "gain": 1
+          },
+          {
+            "start": 21,
+            "end": 22.2,
+            "gain": 1
+          },
+          {
+            "start": 28,
+            "end": 29.2,
+            "gain": 1
+          }
+        ],
+        "peak": 0.9713134765625
+      }
+    ],
+    "selection": "Maximum count of 12 log-spaced 80–4000 Hz bands within 20 dB of strongest band, then spectral entropy; 1.2 s windows, 0.1 s stride; no detector-based selection.",
+    "matching": "One-to-one match: detection delivered between insertion end - 0.1 s and end + 0.65 s; other detections are false positives."
+  },
+  "sourceHashes": {
+    "src/music-trigger.ts": "d1a84ec15b44e366eae089ba85f2fea70d13ac8115b6ceea709706ca4c7e62df",
+    "src/trigger-worker.ts": "60d195862e3c6beed1acf82c6714a140538ea16dbaa3ecff07672bf82e9fbafc"
+  },
+  "templateFrames": 39,
+  "results": [
+    {
+      "name": "background",
+      "insertions": 0,
+      "detections": 0,
+      "truePositives": 0,
+      "falsePositives": 0,
+      "misses": 0,
+      "expected": [],
+      "falsePositiveTimes": [],
+      "runtimeMs": 1289.507666
+    },
+    {
+      "name": "gapped",
+      "insertions": 5,
+      "detections": 5,
+      "truePositives": 5,
+      "falsePositives": 0,
+      "misses": 0,
+      "expected": [
+        {
+          "start": 3,
+          "end": 4.2,
+          "gain": 1,
+          "oracleBoundaryDistance": 0.02243362420602632,
+          "detectedAt": 4.522666666666667,
+          "latency": 0.32266666666666666
+        },
+        {
+          "start": 9,
+          "end": 10.2,
+          "gain": 1,
+          "oracleBoundaryDistance": 0.02243362420602632,
+          "detectedAt": 10.496,
+          "latency": 0.29600000000000115
+        },
+        {
+          "start": 15,
+          "end": 16.2,
+          "gain": 1,
+          "oracleBoundaryDistance": 0.02243362420602632,
+          "detectedAt": 16.554666666666666,
+          "latency": 0.3546666666666667
+        },
+        {
+          "start": 21,
+          "end": 22.2,
+          "gain": 1,
+          "oracleBoundaryDistance": 0.02243362420602632,
+          "detectedAt": 22.528,
+          "latency": 0.3279999999999994
+        },
+        {
+          "start": 28,
+          "end": 29.2,
+          "gain": 1,
+          "oracleBoundaryDistance": 0.02243362420602632,
+          "detectedAt": 29.525333333333332,
+          "latency": 0.32533333333333303
+        }
+      ],
+      "falsePositiveTimes": [],
+      "runtimeMs": 1289.860208
+    },
+    {
+      "name": "gapped_levels",
+      "insertions": 5,
+      "detections": 5,
+      "truePositives": 5,
+      "falsePositives": 0,
+      "misses": 0,
+      "expected": [
+        {
+          "start": 3,
+          "end": 4.2,
+          "gain": 0.5,
+          "oracleBoundaryDistance": 0.02243362420602632,
+          "detectedAt": 4.522666666666667,
+          "latency": 0.32266666666666666
+        },
+        {
+          "start": 9,
+          "end": 10.2,
+          "gain": 0.75,
+          "oracleBoundaryDistance": 0.022433624205034856,
+          "detectedAt": 10.496,
+          "latency": 0.29600000000000115
+        },
+        {
+          "start": 15,
+          "end": 16.2,
+          "gain": 1,
+          "oracleBoundaryDistance": 0.02243362420602632,
+          "detectedAt": 16.554666666666666,
+          "latency": 0.3546666666666667
+        },
+        {
+          "start": 21,
+          "end": 22.2,
+          "gain": 0.6,
+          "oracleBoundaryDistance": 0.022433624231386874,
+          "detectedAt": 22.528,
+          "latency": 0.3279999999999994
+        },
+        {
+          "start": 28,
+          "end": 29.2,
+          "gain": 0.9,
+          "oracleBoundaryDistance": 0.02243362419325945,
+          "detectedAt": 29.525333333333332,
+          "latency": 0.32533333333333303
+        }
+      ],
+      "falsePositiveTimes": [],
+      "runtimeMs": 1297.777583
+    },
+    {
+      "name": "continuous_replace",
+      "insertions": 5,
+      "detections": 0,
+      "truePositives": 0,
+      "falsePositives": 0,
+      "misses": 5,
+      "expected": [
+        {
+          "start": 3,
+          "end": 4.2,
+          "gain": 1,
+          "oracleBoundaryDistance": 0.02243362420602632,
+          "detectedAt": null,
+          "latency": null
+        },
+        {
+          "start": 9,
+          "end": 10.2,
+          "gain": 1,
+          "oracleBoundaryDistance": 0.02243362420602632,
+          "detectedAt": null,
+          "latency": null
+        },
+        {
+          "start": 15,
+          "end": 16.2,
+          "gain": 1,
+          "oracleBoundaryDistance": 0.02243362420602632,
+          "detectedAt": null,
+          "latency": null
+        },
+        {
+          "start": 21,
+          "end": 22.2,
+          "gain": 1,
+          "oracleBoundaryDistance": 0.02243362420602632,
+          "detectedAt": null,
+          "latency": null
+        },
+        {
+          "start": 28,
+          "end": 29.2,
+          "gain": 1,
+          "oracleBoundaryDistance": 0.02243362420602632,
+          "detectedAt": null,
+          "latency": null
+        }
+      ],
+      "falsePositiveTimes": [],
+      "runtimeMs": 1265.4907919999996
+    },
+    {
+      "name": "overlay",
+      "insertions": 5,
+      "detections": 0,
+      "truePositives": 0,
+      "falsePositives": 0,
+      "misses": 5,
+      "expected": [
+        {
+          "start": 3,
+          "end": 4.2,
+          "gain": 1,
+          "oracleBoundaryDistance": 0.05767360193793545,
+          "detectedAt": null,
+          "latency": null
+        },
+        {
+          "start": 9,
+          "end": 10.2,
+          "gain": 1,
+          "oracleBoundaryDistance": 0.09480657311346781,
+          "detectedAt": null,
+          "latency": null
+        },
+        {
+          "start": 15,
+          "end": 16.2,
+          "gain": 1,
+          "oracleBoundaryDistance": 0.06283269752859758,
+          "detectedAt": null,
+          "latency": null
+        },
+        {
+          "start": 21,
+          "end": 22.2,
+          "gain": 1,
+          "oracleBoundaryDistance": 0.10469282897821848,
+          "detectedAt": null,
+          "latency": null
+        },
+        {
+          "start": 28,
+          "end": 29.2,
+          "gain": 1,
+          "oracleBoundaryDistance": 0.16654922894856453,
+          "detectedAt": null,
+          "latency": null
+        }
+      ],
+      "falsePositiveTimes": [],
+      "runtimeMs": 1262.0829169999997
+    }
+  ]
+}

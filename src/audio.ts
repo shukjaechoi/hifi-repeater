@@ -20,27 +20,53 @@ export class AudioEngine {
     await this.context.resume();
     return this.context;
   }
+  capturing = false;
+  monitor?: (chunk: Float32Array, rate: number) => void;
+  interrupted?: () => void;
+  private onChunk?: (chunk: Float32Array) => void;
+  private opening?: Promise<MediaTrackSettings>;
+  private generation = 0;
+  async listen() {
+    if (this.stream?.active && this.node) { await this.ready(); return this.stream.getAudioTracks()[0].getSettings(); }
+    if (this.opening) return this.opening;
+    const generation = this.generation;
+    this.opening = (async () => {
+      const ctx = await this.ready();
+      const stream = await navigator.mediaDevices.getUserMedia({audio: {channelCount: 1, echoCancellation: false, noiseSuppression: false, autoGainControl: false}});
+      try {
+        if (!this.loaded) { await ctx.audioWorklet.addModule(new URL('recorder-worklet.js', document.baseURI)); this.loaded = true; }
+        if (generation !== this.generation) throw new Error('마이크 연결이 취소되었습니다.');
+        this.stream = stream;
+        this.node = new AudioWorkletNode(ctx, 'pcm-recorder');
+        this.node.port.onmessage = ({data}) => {
+          if (data.samples) {
+            if (data.recording) { this.chunks.push(data.samples); this.onChunk?.(data.samples); }
+            this.monitor?.(data.samples, ctx.sampleRate);
+          }
+          if (data.done) this.stopping?.();
+        };
+        stream.getAudioTracks()[0].onended = () => this.interrupted?.();
+        this.input = ctx.createMediaStreamSource(stream);
+        this.input.connect(this.node); this.node.connect(ctx.destination);
+        return stream.getAudioTracks()[0].getSettings();
+      } catch (error) { stream.getTracks().forEach(t => t.stop()); throw error; }
+    })();
+    try { return await this.opening; } finally { this.opening = undefined; }
+  }
   async record(onChunk: (chunk: Float32Array) => void, onInterrupted: () => void) {
     this.stopPlayback();
-    const ctx = await this.ready();
-    try {
-      this.stream = await navigator.mediaDevices.getUserMedia({audio: {channelCount: 1, echoCancellation: false, noiseSuppression: false, autoGainControl: false}});
-      if (!this.loaded) { await ctx.audioWorklet.addModule(new URL('recorder-worklet.js', document.baseURI)); this.loaded = true; }
-      this.chunks = [];
-      this.node = new AudioWorkletNode(ctx, 'pcm-recorder');
-      this.node.port.onmessage = ({data}) => {
-        if (data.samples) { this.chunks.push(data.samples); onChunk(data.samples); }
-        if (data.done) this.stopping?.();
-      };
-      this.stream.getAudioTracks()[0].onended = onInterrupted;
-      this.input = ctx.createMediaStreamSource(this.stream);
-      this.input.connect(this.node); this.node.connect(ctx.destination);
-      return this.stream.getAudioTracks()[0].getSettings();
-    } catch (error) { this.release(); throw error; }
+    const settings = await this.listen();
+    this.chunks = []; this.onChunk = onChunk;
+    this.interrupted = onInterrupted;
+    this.capturing = true;
+    this.node!.port.postMessage('start');
+    return settings;
   }
   release() {
+    this.generation++; this.capturing = false;
     this.stream?.getTracks().forEach(t => { t.onended = null; t.stop(); });
     this.input?.disconnect(); this.node?.disconnect(); this.stream = undefined; this.node = undefined;
+    this.onChunk = undefined;
   }
   async finish() {
     if (!this.node || !this.context) throw new Error('녹음 장치가 없습니다.');
@@ -53,7 +79,7 @@ export class AudioEngine {
       const samples = concatenate(this.chunks);
       this.chunks = [];
       return {samples, rate: this.context.sampleRate};
-    } finally { this.release(); this.stopping = undefined; }
+    } finally { this.capturing = false; if (!this.monitor) this.release(); this.onChunk = undefined; this.stopping = undefined; }
   }
   async play(samples: Float32Array<ArrayBuffer>, rate: number, start: number, end: number, loop: boolean, ended: () => void, filter: PlaybackFilter = 'none', squeakReduction = false) {
     this.stopPlayback();

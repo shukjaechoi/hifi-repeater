@@ -1,0 +1,167 @@
+{
+  "source": "/Users/sjchoi/dev/mic-fr/iphone.wav",
+  "sha256": "68c70d3969528be3b164ee7ce39b186e259d8636b0f91b1de77f20b113b0ecec",
+  "rate": 48000,
+  "source_trigger_start": 15.200000000000012,
+  "trigger_duration": 1.2,
+  "rms": 0.15979412041356125,
+  "band_edges_hz": [
+    80.0,
+    110.83344199051797,
+    153.5506482933188,
+    212.73183587779963,
+    294.72251989123106,
+    408.3138913958002,
+    565.6854249492382,
+    783.7107841374109,
+    1085.767046637963,
+    1504.241237234558,
+    2084.002923834766,
+    2887.2152145863784,
+    4000.0
+  ],
+  "band_relative_db": [
+    -18.286021594734667,
+    -2.5728040008573987,
+    -3.3186832069208574,
+    -0.5817890877705402,
+    0.0,
+    -3.485037319570017,
+    -3.89860092913251,
+    -9.216496555088884,
+    -19.45666017917909,
+    -19.34394136172733,
+    -23.12245709117939,
+    -35.90953278370587
+  ],
+  "bands_within_20db": 10,
+  "duration": 35,
+  "conditions": [
+    {
+      "name": "gapped",
+      "events": [
+        {
+          "start": 3.0,
+          "end": 4.2,
+          "gain": 1
+        },
+        {
+          "start": 9.0,
+          "end": 10.2,
+          "gain": 1
+        },
+        {
+          "start": 15.0,
+          "end": 16.2,
+          "gain": 1
+        },
+        {
+          "start": 21.0,
+          "end": 22.2,
+          "gain": 1
+        },
+        {
+          "start": 28.0,
+          "end": 29.2,
+          "gain": 1
+        }
+      ],
+      "peak": 0.853240966796875
+    },
+    {
+      "name": "gapped_levels",
+      "events": [
+        {
+          "start": 3.0,
+          "end": 4.2,
+          "gain": 0.5
+        },
+        {
+          "start": 9.0,
+          "end": 10.2,
+          "gain": 0.75
+        },
+        {
+          "start": 15.0,
+          "end": 16.2,
+          "gain": 1
+        },
+        {
+          "start": 21.0,
+          "end": 22.2,
+          "gain": 0.6
+        },
+        {
+          "start": 28.0,
+          "end": 29.2,
+          "gain": 0.9
+        }
+      ],
+      "peak": 0.853240966796875
+    },
+    {
+      "name": "continuous_replace",
+      "events": [
+        {
+          "start": 3.0,
+          "end": 4.2,
+          "gain": 1
+        },
+        {
+          "start": 9.0,
+          "end": 10.2,
+          "gain": 1
+        },
+        {
+          "start": 15.0,
+          "end": 16.2,
+          "gain": 1
+        },
+        {
+          "start": 21.0,
+          "end": 22.2,
+          "gain": 1
+        },
+        {
+          "start": 28.0,
+          "end": 29.2,
+          "gain": 1
+        }
+      ],
+      "peak": 0.8626708984375
+    },
+    {
+      "name": "overlay",
+      "events": [
+        {
+          "start": 3.0,
+          "end": 4.2,
+          "gain": 1
+        },
+        {
+          "start": 9.0,
+          "end": 10.2,
+          "gain": 1
+        },
+        {
+          "start": 15.0,
+          "end": 16.2,
+          "gain": 1
+        },
+        {
+          "start": 21.0,
+          "end": 22.2,
+          "gain": 1
+        },
+        {
+          "start": 28.0,
+          "end": 29.2,
+          "gain": 1
+        }
+      ],
+      "peak": 0.9713134765625
+    }
+  ],
+  "selection": "Maximum count of 12 log-spaced 80\u20134000 Hz bands within 20 dB of strongest band, then spectral entropy; 1.2 s windows, 0.1 s stride; no detector-based selection.",
+  "matching": "One-to-one match: detection delivered between insertion end - 0.1 s and end + 0.65 s; other detections are false positives."
+}

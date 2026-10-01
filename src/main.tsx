@@ -7,6 +7,7 @@ import { loadHybridFir, type PlaybackFilter } from './filters';
 import { tcnGpuAvailable } from './tcn';
 import { Waveform } from './Waveform';
 import './style.css';
+import { useMusicTrigger } from './useMusicTrigger';
 type State = 'idle' | 'preparing' | 'recording' | 'finishing' | 'playing';
 const slotStatus = (current: boolean, take: Take | undefined, recording: boolean, elapsed: number) => {
   if (current) return `작업중 · ${time(recording ? elapsed : take ? take.samples.length/take.rate : elapsed)}`;
@@ -48,7 +49,11 @@ function App() {
   const audioStorageBytes = takes.reduce((total,take) => total + take.samples.byteLength, 0);
   const viewStart = zoom?.[0] ?? 0, viewEnd = zoom?.[1] ?? duration;
   const visibleSamples = useMemo(() => active && zoom ? active.samples.subarray(Math.floor(viewStart * active.rate), Math.ceil(viewEnd * active.rate)) : active?.samples, [active?.samples, active?.rate, zoom, viewStart, viewEnd]);
-  const recording = state === 'recording', locked = recording || state === 'preparing' || state === 'finishing';
+  const recording = state === 'recording';
+  const trigger = useMusicTrigger(engine, page === 'practice' && (state === 'idle' || recording), seconds => {
+    if (page === 'practice' && !busy.current && (state === 'idle' || recording)) void record(recording ? seconds : undefined);
+  });
+  const locked = recording || state === 'preparing' || state === 'finishing' || trigger.enrolling || trigger.connecting;
   useEffect(() => { allTakes().then(setTakes).catch(() => setError('작업 저장소를 열 수 없습니다. 브라우저의 저장 권한을 확인하세요.')).finally(() => setLoaded(true)); return () => {engine.stopPlayback(); engine.release();}; }, [engine]);
   useEffect(() => { loadHybridFir().then(() => setFirAvailable(true)).catch(() => setFirError('필터 파일을 불러오지 못했습니다. 네트워크 연결을 확인해 주세요.')); }, []);
   useEffect(() => { if (state !== 'playing') return; let id: number; const tick = () => {setPosition(engine.position()); id = requestAnimationFrame(tick);}; id = requestAnimationFrame(tick); return () => cancelAnimationFrame(id); }, [state, engine]);
@@ -57,7 +62,7 @@ function App() {
     await engine.play(take.samples, take.rate, take.start, take.end, loop, () => {setState('idle'); setPlaybackMode(null); setPosition(take.end);}, filter, mode === 'filtered' && squeakReduction);
     setPosition(take.start); setPlaybackMode(mode); setState('playing');
   }
-  async function record() {
+  async function record(triggerSeconds?: number) {
     if (busy.current || !loaded) return;
     busy.current = true; setError(''); setNotice('');
     try {
@@ -67,7 +72,7 @@ function App() {
         if (data.samples.length < data.rate * .05) throw new Error('녹음이 너무 짧습니다. 조금 더 길게 연주해 주세요.');
         const duration = data.samples.length/data.rate;
         const start = autoTrimSilence ? leadingSoundOffset(data.samples, data.rate) ?? 0 : 0;
-        const take: Take = { ...data, id: crypto.randomUUID(), slot, created: Date.now(), saved: false, start, end: duration, settings: settings.current };
+        const take: Take = { ...data, id: crypto.randomUUID(), slot, created: Date.now(), saved: false, start, end: triggerSeconds ? Math.max(start + .02, duration - triggerSeconds) : duration, settings: settings.current };
         setTakes(previous => [take, ...previous]); setSelected(previous => ({...previous, [slot]: take.id}));
         // Playback must not wait for disk persistence.
         void putTake(take).catch(() => setError('내부 저장에 실패했습니다. 이 녹음은 현재 화면에서 WAV로 내보낼 수 있습니다.'));
@@ -107,6 +112,7 @@ function App() {
   async function deleteLocalData() {
     if (locked || busy.current || !window.confirm('이 브라우저에 저장된 모든 연주와 앱 설정을 삭제합니다. 되돌릴 수 없습니다. 계속할까요?')) return;
     try {
+      trigger.remove();
       await clearTakes();
       for (const key of Object.keys(localStorage)) if (key.startsWith('hifi-')) localStorage.removeItem(key);
       setTakes([]); setSelected({}); setPosition(0); setElapsed(0); setAutoTrimSilence(false); setPlaybackFilter('none'); setSqueakReduction(false); setTrackSettings({});
@@ -123,9 +129,11 @@ function App() {
   const allProcessingOff = processingSettings.every(([, value]) => value === false);
   const anyProcessingOn = processingSettings.some(([, value]) => value === true);
   return <div className="app">
-    <header><a className="brand" href="/" aria-label="hifi repeater 홈"><span className="brand-mark">≋</span> hifi<span> / repeater</span></a><nav className="app-tabs" role="tablist" aria-label="앱 화면"><button role="tab" aria-selected={page==='practice'} className={page==='practice'?'selected':''} onClick={()=>setPage('practice')}>연습</button><button role="tab" aria-selected={page==='settings'} className={page==='settings'?'selected':''} disabled={locked} onClick={()=>{stop();setPage('settings');}}>설정</button></nav></header>
+    <header><a className="brand" href="/" aria-label="hifi repeater 홈"><span className="brand-mark">≋</span> hifi<span> / repeater</span></a><nav className="app-tabs" role="tablist" aria-label="앱 화면"><button role="tab" aria-selected={page==='practice'} className={page==='practice'?'selected':''} disabled={trigger.enrolling||trigger.connecting} onClick={()=>setPage('practice')}>연습</button><button role="tab" aria-selected={page==='settings'} className={page==='settings'?'selected':''} disabled={locked} onClick={()=>{stop();setPage('settings');}}>설정</button></nav></header>
     <main>
       {page === 'practice' ? <>
+      {trigger.enabled && <p className="trigger-status" role="status">음악 트리거 · {state === 'playing' || state === 'finishing' ? '재생 중 감지 일시 정지' : state === 'preparing' ? '녹음 준비 중' : '감지 중 · 마이크 켜짐'} <button disabled={state==='preparing'||state==='finishing'} onClick={trigger.cancel}>끄기</button></p>}
+      {trigger.error && <p role="alert" className="message error">{trigger.error}</p>}
       <nav className="slots" role="tablist" aria-label="연습 슬롯">{[0,1,2].map(i => {const take = takes.find(t => t.id === selected[i]) ?? takes.find(t => t.slot === i); return <button key={i} role="tab" aria-selected={slot===i} className={`slot ${slot===i?'active':''}`} disabled={locked} onClick={() => {stop();setZoom(null);setSlot(i);setPosition(0);}}><span className="slot-name">SLOT 0{i+1}</span><strong>{slotStatus(slot===i,take,recording,elapsed)}</strong></button>;})}</nav>
       <section className="studio" aria-label="녹음 및 반복 재생">
         {status && <div className="studio-top"><span className={`status ${recording?'red':''}`}><i/>{status}</span></div>}
@@ -142,6 +150,16 @@ function App() {
       <div className="take-list">{takes.filter(t=>t.slot===slot).map((t,i,arr)=><button key={t.id} disabled={locked} className={`take ${active?.id===t.id?'selected':''}`} onClick={()=>{stop();setZoom(null);setSelected(previous=>({...previous,[slot]:t.id}));setPosition(t.start);}}><TakeWaveform samples={t.samples}/><span><strong>Take {String(arr.length-i).padStart(2,'0')} {t.saved?'★':''}</strong><small>{new Date(t.created).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}</small></span><span className="take-duration">{time(t.samples.length/t.rate)}</span></button>)}{!takes.some(t=>t.slot===slot)&&<div className="no-takes">아직 녹음된 연주가 없습니다. 새 녹음은 이 공간에 자동으로 남아요.</div>}</div></section>
       <aside className="storage-note"><strong>기기 내 녹음 {bytesLabel(audioStorageBytes)}</strong><span>연주 PCM 데이터 기준의 대략적인 크기입니다. 녹음은 자동 삭제되지 않으며, 브라우저의 이 사이트 저장 데이터를 지우면 함께 삭제됩니다. 중요한 연주는 WAV로 내보내 보관하세요.</span></aside>
       </> : <section className="settings-page">
+        <section className="settings-card" aria-labelledby="trigger-title">
+          <div className="settings-title"><h2 id="trigger-title">Trigger sound · 음악으로 녹음 제어</h2><p>짧은 화음이나 음악 패턴을 등록하세요. 같은 패턴으로 녹음을 시작하고, 다시 연주하면 정지하고 재생합니다.</p></div>
+          <div className="trigger-actions"><button disabled={trigger.connecting} onClick={()=>{if(trigger.enrolling) trigger.finishEnrollment(); else {stop();void trigger.open(true);}}}>{trigger.enrolling?'등록 녹음 마치기':trigger.connecting?'마이크 연결 중':'트리거 소리 녹음하기'}</button>
+          {(trigger.enrolling||trigger.connecting) && <button onClick={trigger.cancel}>등록 취소</button>}
+          {trigger.template && <button disabled={trigger.enrolling||trigger.connecting} onClick={trigger.remove}>트리거 삭제</button>}</div>
+          <label className="filter-option"><input type="checkbox" checked={trigger.enabled} disabled={!trigger.template||trigger.enrolling||trigger.connecting} onChange={e=>{if(e.target.checked){stop();void trigger.open(false);}else trigger.cancel();}}/><span><strong>Trigger sound 활성화</strong><small>마이크 연결을 유지합니다. 연습 화면에서 감지하며 재생 중에는 감지를 쉽니다.</small></span></label>
+          <p className="filter-description" role="status">{trigger.enrolling?'등록 중 · 음악 패턴을 연주하세요. 최대 4.5초 후 자동 종료합니다.':trigger.enabled?'마이크 켜짐 · 연습 화면에서 감지합니다.':trigger.template?'등록됨 · 활성화하면 마이크를 엽니다.':'아직 등록된 음악 패턴이 없습니다.'}</p>
+          <p className="filter-description">실험 기능 · 0.2~4초의 구별되는 패턴을 사용하고 앞뒤에 잠깐 쉬어 주세요. 연주에 같은 패턴이 나오면 오인식할 수 있습니다. 화면 잠금·백그라운드에서는 중단될 수 있으며 앱을 다시 열면 활성화가 필요합니다.</p>
+          {trigger.error && <p role="alert" className="message error">{trigger.error}</p>}
+        </section>
         <section className="settings-card" aria-labelledby="filters-title"><div className="settings-title"><h2 id="filters-title">적용할 필터</h2><p>선택한 필터는 녹음 원본을 바꾸지 않고 재생할 때 적용됩니다.</p></div>
           <label className="filter-option"><input type="checkbox" checked={playbackFilter==='iphone-km184-hybrid-fir'} disabled={!firAvailable && playbackFilter!=='iphone-km184-hybrid-fir'} onChange={event=>{const next: PlaybackFilter=event.target.checked?'iphone-km184-hybrid-fir':'none';setPlaybackFilter(next);localStorage.setItem('hifi-playback-filter',next);}}/><span><strong>iPhone to km184 - 4097-tap FIR</strong><small>Hybrid 기준 · train-only · 48 kHz · epoch 0 FIR</small></span></label>
           <label className="filter-option"><input type="checkbox" checked={playbackFilter==='iphone-km184-iir'} onChange={event=>{const next: PlaybackFilter=event.target.checked?'iphone-km184-iir':'none';setPlaybackFilter(next);localStorage.setItem('hifi-playback-filter',next);}}/><span><strong>iPhone to km184 - IIR</strong><small>6개 넓은 피킹 밴드 · 최소 위상 · 재생 시 원본 음량에 맞춤</small></span></label>
