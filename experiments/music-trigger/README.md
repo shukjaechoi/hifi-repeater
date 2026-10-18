@@ -38,6 +38,10 @@
 
 ![검출 위치와 주파수 대역](output/detection.png)
 
+## 2026-10-18 반복 등록 회귀 시험
+
+현재 `evaluate.mjs`는 동일 발췌를 음량 0.7/0.85/1.0/0.8/0.9배로 5회 등록하고, 실제 Worker의 구간 분리와 보정 결과를 사용한다. 확인 UI는 브라우저 테스트에서 별도로 검증한다. 결과는 `output/results-multiple.json`에 저장하여 위의 첫 시험을 보존한다. 보정 임계값 0.10에서 쉼 조건 5/5, 음량 변경 5/5, 배경 오검출 0회, 무쉼 교체/겹침 0/5였다. 동일 발췌를 재사용한 회귀 시험이며 독립적으로 다시 연주한 녹음의 성능 검증은 아니다.
+
 ## 재현
 
 저장소 루트에서 실행한다. Python은 numpy/scipy/soundfile/matplotlib이 설치된 기존 실험 환경을 사용한다.
@@ -48,4 +52,4 @@ node experiments/music-trigger/evaluate.mjs
 MPLCONFIGDIR=/tmp/hifi-trigger-matplotlib experiments/mic-modeling/.venv/bin/python experiments/music-trigger/report.py
 ```
 
-`output/manifest.json`에 원본 해시·선정 기준·삽입 정답을, `output/results.json`에 실제 감지 코드 해시·검출 결과·정답 경계 진단을 저장한다. `output/detections.csv`로 위치를 확인할 수 있다. WAV와 PCM은 재생성 가능하며 Git에서는 제외한다. 평가 스크립트는 배경 오검출 또는 쉼 조건의 누락/오검출 발생 시 실패 코드로 종료한다. 무쉼 조건은 알려진 한계로 보고한다.
+`output/manifest.json`에 원본 해시·선정 기준·삽입 정답을, `output/results.json`에는 첫 시험을 보존하며 현재 실행은 `output/results-multiple.json`에 실제 감지 코드 해시·검출 결과·정답 경계 진단을 저장한다. `report.py`는 첫 시험의 그래프를 생성한다. `output/detections.csv`로 위치를 확인할 수 있다. WAV와 PCM은 재생성 가능하며 Git에서는 제외한다. 평가 스크립트는 배경 오검출 또는 쉼 조건의 누락/오검출 발생 시 실패 코드로 종료한다. 무쉼 조건은 알려진 한계로 보고한다.

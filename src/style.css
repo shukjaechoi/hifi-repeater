@@ -201,3 +201,6 @@ header .app-tabs button.selected{color:#e0ebd3;border-bottom-color:#c7e69e}
 .trigger-actions button,.trigger-status button{padding:9px 14px;border:1px solid #697960;border-radius:6px;background:transparent;color:inherit;cursor:pointer}
 .trigger-actions button:disabled{opacity:.45;cursor:default}
 .trigger-status{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;color:#8da77d}
+.trigger-review{padding:14px;border:1px solid #697960;border-radius:8px;margin:12px 0}
+.trigger-review ol{padding-left:24px}.trigger-review li{margin:8px 0}
+.trigger-review button{padding:6px 10px;background:transparent;color:inherit;border:1px solid #697960;border-radius:5px}

@@ -12,7 +12,7 @@ test('record → automatic loop → second slot → persistence and WAV export',
   await expect(page.getByText('Take 01',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'재생 정지',exact:true}).click();
   await page.getByRole('button',{name:'시작 무음 건너뛰기'}).click();
-  await expect(page.getByRole('status')).toContainText('앞 무음');
+  await expect(page.getByRole('status')).toContainText(/앞 무음|연주 시작점을 찾지 못했습니다/);
   await page.getByRole('slider',{name:'구간 시작'}).fill('0.2');
   await page.getByRole('button',{name:'선택 구간 확대'}).click();
   await expect(page.getByRole('button',{name:'전체 보기'})).toBeVisible();

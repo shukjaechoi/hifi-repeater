@@ -1,34 +1,32 @@
-import { MusicFeatures, musicDistance, trimMusic, HOP_SECONDS, type MusicFrame, type MusicTemplate } from './music-trigger';
-let features = new MusicFeatures(), template: MusicTemplate | undefined;
-let frames: MusicFrame[] = [], silent = 0, armed = false, generation = 0, mode = 'off', rate = 0;
-let cooldown = 0, noise = .001;
+import { MusicFeatures, MusicSegmenter, calibrate, templateDistance, MAX_EXAMPLES, type MusicSegment, type MusicTemplate } from './music-trigger';
+let features = new MusicFeatures(), segmenter = new MusicSegmenter(), template: MusicTemplate | undefined;
+let segments: MusicSegment[] = [], generation = 0, mode = 'off', rate = 0, cooldown = 0, overflow = false;
 self.onmessage = ({data}) => {
   if (data.type === 'reset') {
     generation = data.generation; mode = data.mode; template = data.template;
-    features = new MusicFeatures(); frames = []; silent = 0; armed = false; cooldown = 0; rate = 0; noise = .001;
+    features = new MusicFeatures(); segmenter = new MusicSegmenter(); segments = []; cooldown = 0; rate = 0; overflow = false;
   } else if (data.type === 'finish' && data.generation === generation && mode === 'enroll') {
-    const trimmed = trimMusic(frames);
-    self.postMessage({type:'template', generation, template: {version:1, frames:trimmed}});
-    mode = 'off'; frames = [];
+    segmenter.finish();
+    const calibration = calibrate(segments.map(segment => segment.frames));
+    if (segmenter.rejected || overflow) {
+      calibration.template = undefined;
+      calibration.error = overflow ? '8회를 초과했습니다. 5회 정도로 다시 등록해 주세요.' : `${segmenter.rejected}개 구간이 너무 짧거나 길거나 끝나지 않았습니다. 각 패턴 뒤에 쉬고 다시 등록해 주세요.`;
+    }
+    self.postMessage({type:'review', generation, segments, calibration});
+    mode = 'off';
   } else if (data.type === 'pcm' && data.generation === generation && mode !== 'off') {
-    if (rate && rate !== data.rate) { features = new MusicFeatures(); frames = []; armed = false; }
+    if (rate && rate !== data.rate) { self.postMessage({type:'failure',generation}); mode = 'off'; return; }
     rate = data.rate;
     for (const frame of features.push(data.samples, rate)) {
-      if (mode === 'enroll') { if (frames.length < 155) frames.push(frame); continue; }
-      const quiet = frame.rms < Math.max(.004, noise * 3);
-      if (quiet) noise = noise * .98 + frame.rms * .02;
-      if (cooldown > 0) { cooldown--; frames = []; silent = 0; continue; }
-      if (!armed) { silent = quiet ? silent + 1 : 0; if (silent >= 7) { armed = true; silent = 0; } continue; }
-      if (!frames.length && quiet) continue;
-      frames.push(frame); silent = quiet ? silent + 1 : 0;
-      if (frames.length > 150) { frames = []; armed = false; silent = 0; continue; }
-      if (silent >= 7) {
-        const candidate = trimMusic(frames);
-        if (template && candidate.length >= 6 && musicDistance(template.frames, candidate) < .12) {
-          self.postMessage({type:'match', generation, seconds: (frames.length + 1) * HOP_SECONDS});
-          cooldown = 32;
-        }
-        frames = []; silent = 0;
+      const segment = segmenter.push(frame);
+      cooldown = Math.max(0, cooldown - 1);
+      if (!segment) continue;
+      if (mode === 'enroll') {
+        if (segments.length < MAX_EXAMPLES) segments.push(segment); else overflow = true;
+        self.postMessage({type:'count', generation, count:segments.length, overflow});
+      } else if (!cooldown && template && templateDistance(template, segment.frames) < (template.version === 1 ? .12 : template.threshold)) {
+        self.postMessage({type:'match', generation, seconds:segment.end - segment.start + .224});
+        cooldown = 32;
       }
     }
     self.postMessage({type:'ack', generation});

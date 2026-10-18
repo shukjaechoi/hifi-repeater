@@ -1,5 +1,6 @@
 import {test,expect} from '@playwright/test';
 test('register music, toggle takes with one live mic, persist and release',async({page})=>{
+  test.setTimeout(45000);
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>{
     let context:AudioContext, output:MediaStreamAudioDestinationNode;
@@ -21,17 +22,39 @@ test('register music, toggle takes with one live mic, persist and release',async
   await expect(page.getByRole('checkbox',{name:'Trigger sound 활성화'})).toBeDisabled();
   await page.getByRole('button',{name:'트리거 소리 녹음하기'}).click();
   await expect(page.getByRole('button',{name:'등록 녹음 마치기'})).toBeVisible();
-  await page.waitForTimeout(350);await page.evaluate(()=>(window as any).musicHarness.sound());await page.waitForTimeout(1100);
+  await page.waitForTimeout(350);
+  await page.evaluate(()=>(window as any).musicHarness.sound());await page.waitForTimeout(1200);
   await page.getByRole('button',{name:'등록 녹음 마치기'}).click();
-  await expect(page.getByText('등록됨 · 활성화하면 마이크를 엽니다.',{exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'1회가 맞습니다 · 등록',exact:true})).toBeDisabled();
+  await expect(page.getByRole('alert')).toContainText('최소 3회');
+  await page.getByRole('button',{name:'횟수나 구간이 달라요 · 다시 녹음',exact:true}).click();
+  await expect(page.getByRole('button',{name:'등록 녹음 마치기'})).toBeVisible();
+  await page.waitForTimeout(350);
+  for(let i=0;i<5;i++){await page.evaluate(()=>(window as any).musicHarness.sound());await page.waitForTimeout(1200);}
+  await page.getByRole('button',{name:'등록 녹음 마치기'}).click();
+  await expect(page.getByText('5회를 감지했습니다. 입력한 횟수와 구간이 맞나요?',{exact:true})).toBeVisible();
+  expect(await page.evaluate(()=>localStorage.getItem('hifi-music-trigger-v2'))).toBe(null);
+  await expect(page.getByRole('checkbox',{name:'Trigger sound 활성화'})).toBeDisabled();
+  await page.screenshot({path:'test-results/trigger-review.png',fullPage:true});
+  await page.setViewportSize({width:390,height:844});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.screenshot({path:'test-results/trigger-review-mobile.png',fullPage:true});
+  await page.setViewportSize({width:1440,height:1100});
+  await page.getByRole('button',{name:'1번 들어보기',exact:true}).click();
+  await page.getByRole('button',{name:'5회가 맞습니다 · 등록',exact:true}).click();
+  await expect(page.getByText('등록됨 · 5회 샘플로 보정됨',{exact:true})).toBeVisible();
   expect(await page.evaluate(()=>(window as any).musicHarness.stream.active)).toBe(false);
+  await page.getByRole('button',{name:'감지 시험',exact:true}).click();
+  await page.waitForTimeout(350);await page.evaluate(()=>(window as any).musicHarness.sound());
+  await expect(page.getByText(/시험 중 · 1회 감지/)).toBeVisible();
+  await page.getByRole('button',{name:'감지 시험 종료',exact:true}).click();
   await page.getByRole('checkbox',{name:'Trigger sound 활성화'}).check();
   await page.getByRole('tab',{name:'연습',exact:true}).click();
   await page.waitForTimeout(400);await page.evaluate(()=>(window as any).musicHarness.sound());
   await expect(page.getByRole('button',{name:'정지하고 듣기',exact:true})).toBeVisible();
   await page.waitForTimeout(1500);await page.evaluate(()=>(window as any).musicHarness.sound());
   await expect(page.getByText('Take 01',{exact:true})).toBeVisible();
-  expect(await page.evaluate(()=>(window as any).musicHarness.opens)).toBe(2);
+  expect(await page.evaluate(()=>(window as any).musicHarness.opens)).toBe(4);
   expect(await page.evaluate(()=>(window as any).musicHarness.stream.active)).toBe(true);
   await page.waitForTimeout(2200);
   await expect(page.getByRole('button',{name:'녹음 시작',exact:true})).toBeVisible();
@@ -46,6 +69,11 @@ test('register music, toggle takes with one live mic, persist and release',async
   await page.reload();await page.getByRole('tab',{name:'설정',exact:true}).click();
   await expect(page.getByRole('checkbox',{name:'Trigger sound 활성화'})).toBeEnabled();
   await expect(page.getByRole('checkbox',{name:'Trigger sound 활성화'})).not.toBeChecked();
+  const saved=await page.evaluate(()=>localStorage.getItem('hifi-music-trigger-v2'));
+  await page.getByRole('button',{name:'트리거 소리 녹음하기'}).click();
+  await expect(page.getByRole('button',{name:'등록 녹음 마치기'})).toBeVisible();
+  await page.getByRole('button',{name:'등록 취소',exact:true}).click();
+  expect(await page.evaluate(()=>localStorage.getItem('hifi-music-trigger-v2'))).toBe(saved);
   await page.getByRole('button',{name:'트리거 삭제',exact:true}).click();
   await expect(page.getByRole('checkbox',{name:'Trigger sound 활성화'})).toBeDisabled();
   expect(errors).toEqual([]);
