@@ -152,7 +152,7 @@ function App() {
       </> : <section className="settings-page">
         <section className="settings-card" aria-labelledby="trigger-title">
           <div className="settings-title"><h2 id="trigger-title">Trigger sound · 음악으로 녹음 제어</h2><p>짧은 화음이나 음악 패턴을 등록하세요. 같은 패턴으로 녹음을 시작하고, 다시 연주하면 정지하고 재생합니다.</p></div>
-          <p className="filter-description">같은 화음이나 짧은 멜로디를 5번 연주해 주세요. 처음 0.5초는 주변 소리를 듣습니다. 그다음 매번 약 0.5초 쉬어 주세요. 잔향이나 작은 주변 소리는 남아 있어도 됩니다. 최소 3회, 최대 8회이며 각 패턴은 0.2~4초입니다.</p>
+          <p className="filter-description">같은 화음이나 짧은 멜로디를 5번 연주해 주세요. 처음 0.5초는 주변 소리를 듣습니다. 그다음 매번 약 0.5초 쉬어 주세요. 잔향이나 작은 주변 소리는 남아 있어도 됩니다. 최소 3회, 최대 8회이며 각 패턴은 0.2~4초입니다. 아주 약한 소리는 제외하므로 실제 사용할 거리에서 등록하고, 확인된 횟수가 맞는지 확인해 주세요.</p>
           <div className="trigger-actions"><button disabled={trigger.connecting||trigger.analyzing||trigger.testing} onClick={()=>{if(trigger.enrolling) trigger.finishEnrollment(); else {stop();void trigger.open(true);}}}>{trigger.analyzing?'분석 중…':trigger.enrolling?'등록 녹음 마치기':trigger.connecting?'마이크 연결 중':trigger.review?'다시 녹음하기':'트리거 소리 녹음하기'}</button>
           {(trigger.enrolling||trigger.connecting||trigger.analyzing||trigger.review) && <button onClick={trigger.cancel}>등록 취소</button>}
           {trigger.template && <button disabled={trigger.enrolling||trigger.connecting||trigger.analyzing||trigger.testing||!!trigger.review} onClick={trigger.remove}>트리거 삭제</button>}</div>

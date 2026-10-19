@@ -117,3 +117,16 @@ test('worker keeps valid repetitions when a short fragment is discarded and Fini
   const review=messages.find(m=>m.type==='review');
   assert.equal(review.segments.length,4);assert.ok(review.calibration.template);assert.match(review.calibration.warning,/제외/);
 });
+
+test('enrollment excludes quiet fragments and detection preserves useful distance variation', async()=>{
+  const {audibleSegments,audibleMatch}=await import('../src/music-trigger.ts');
+  const frames=extract(pattern([330,392,523]));
+  const quiet=frames.map(f=>({...f,rms:f.rms*.05}));
+  const segments=[frames,quiet,frames,frames].map((frames,i)=>({frames,start:i,end:i+.7}));
+  const kept=audibleSegments(segments);
+  assert.equal(kept.length,3);
+  const template=calibrate(kept.map(s=>s.frames)).template!;
+  assert.equal(audibleMatch(template,quiet),false);
+  assert.equal(audibleMatch(template,frames.map(f=>({...f,rms:f.rms*.3}))),true);
+  assert.ok(Number.isFinite(musicDistance(frames,extract(pattern([330,392,523],.5)))));
+});

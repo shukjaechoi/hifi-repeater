@@ -119,3 +119,11 @@ DTW는 길이/속도 차이를 일부 허용하는 수단이며, 소음·다른 
 - [openWakeWord](https://github.com/dscripka/openWakeWord)
 - [MDN AudioContext 상태와 iOS Safari 중단](https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext/state)
 - [Android foreground service 시작 제한](https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start)
+
+## 2026-10-19 실제 Take 기반 조정
+
+- 길이 비율 허용 범위를 0.4–2.5로 확대하고 재감지 대기를 0.32초로 줄였다. 구간 종료에 필요한 쉼은 유지한다.
+- 등록 완료 시 최대 구간 RMS의 20%보다 약한 구간을 제외하고 남은 구간을 사용자에게 확인받는다. 등록은 여전히 3–8회다.
+- 감지 시 등록 예시 최대 RMS 중앙값의 20%보다 약한 입력은 제외한다. 실제 사용할 거리에서 등록해야 한다.
+- 새 등록의 threshold는 max(0.12, min(0.24, worst × 1.10 + 0.02))다. 기존 저장 threshold는 유지하므로 개선된 보정은 재등록해야 적용된다.
+- 사용자 Take 1–6의 정답 횟수는 8/8/9/10/16/11이다. 각 파일의 강한 첫 5구간을 등록한 개발용 교차 실험에서 동일 횟수를 검출하고 다른 파일 30개 조합의 오검출은 0회였다. 등록 구간이 양성 평가에 포함되고 같은 데이터로 조정했으므로 독립 정확도를 뜻하지 않는다. 원본 음원은 Git에 포함하지 않는다.

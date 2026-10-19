@@ -40,6 +40,16 @@ export function validTemplate(value: unknown): value is MusicTemplate {
   return t?.version === 2 && Array.isArray(t.examples) && t.examples.length >= 3 && t.examples.length <= MAX_EXAMPLES && t.examples.every(example => validFrames(example))
     && Number.isFinite(t.threshold) && t.threshold >= .10 && t.threshold <= .24;
 }
+/** Keep audible enrollment events; the user reviews the resulting count. */
+export function audibleSegments(segments: MusicSegment[]): MusicSegment[] {
+  const peak = Math.max(0, ...segments.map(s => Math.max(...s.frames.map(f => f.rms))));
+  return segments.filter(s => Math.max(...s.frames.map(f => f.rms)) >= peak * .2);
+}
+export function audibleMatch(template: MusicTemplate, frames: MusicFrame[]): boolean {
+  if (template.version === 1) return true;
+  const peaks = template.examples.map(e => Math.max(...e.map(f => f.rms))).sort((a,b) => a-b);
+  return Math.max(...frames.map(f => f.rms)) >= peaks[Math.floor(peaks.length / 2)] * .2;
+}
 // Require agreement with two examples, so one unusual example cannot trigger alone.
 export function templateDistance(template: MusicTemplate, frames: MusicFrame[]): number {
   if (template.version === 1) return musicDistance(template.frames, frames);
@@ -57,7 +67,7 @@ export function calibrate(examples: MusicFrame[][]): Calibration {
     return {scores, error: `${outliers.join(', ')}번 구간이 다른 샘플과 잘 맞지 않습니다. 같은 음과 비슷한 길이로 다시 등록해 주세요.`};
   }
   // A bounded margin is a heuristic, not an estimated false-positive probability.
-  return {scores, template: {version: 2, examples, threshold: Math.max(.10, Math.min(.24, worst * 1.15 + .03))}};
+  return {scores, template: {version: 2, examples, threshold: Math.max(.12, Math.min(.24, worst * 1.10 + .02))}};
 }
 /** Identical pause segmentation for enrollment and live detection. Times are PCM-relative. */
 export class MusicSegmenter {
@@ -119,7 +129,7 @@ export class MusicSegmenter {
 const cosine = (a: number[], b: number[]) => Math.max(0, 1 - a.reduce((s, v, i) => s + v * b[i], 0));
 /** Length-bounded DTW. Relative energy retains attacks while allowing level changes. */
 export function musicDistance(a: MusicFrame[], b: MusicFrame[]): number {
-  if (!a.length || !b.length || a.length / b.length < .65 || a.length / b.length > 1.5) return Infinity;
+  if (!a.length || !b.length || a.length / b.length < .4 || a.length / b.length > 2.5) return Infinity;
   const peakA = Math.max(...a.map(f => f.rms)), peakB = Math.max(...b.map(f => f.rms));
   let previous = new Float64Array(b.length + 1).fill(Infinity); previous[0] = 0;
   for (let i = 1; i <= a.length; i++) {

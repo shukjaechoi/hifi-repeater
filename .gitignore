@@ -12,3 +12,5 @@ experiments/mic-modeling/runs/
 experiments/mic-modeling/__pycache__/
 experiments/music-trigger/output/*.wav
 experiments/music-trigger/output/*.f32
+
+experiments/music-trigger/local-takes/
