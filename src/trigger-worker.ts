@@ -6,11 +6,13 @@ self.onmessage = ({data}) => {
     generation = data.generation; mode = data.mode; template = data.template;
     features = new MusicFeatures(); segmenter = new MusicSegmenter(); segments = []; cooldown = 0; rate = 0; overflow = false;
   } else if (data.type === 'finish' && data.generation === generation && mode === 'enroll') {
-    segmenter.finish();
+    const final = segmenter.finish();
+    if (final) {if (segments.length < MAX_EXAMPLES) segments.push(final); else overflow = true;}
     const calibration = calibrate(segments.map(segment => segment.frames));
-    if (segmenter.rejected || overflow) {
+    if (segmenter.rejected) calibration.warning = `${segmenter.rejected}개 구간은 너무 짧거나 길어 제외했습니다. 아래 횟수와 소리를 확인해 주세요.`;
+    if (overflow) {
       calibration.template = undefined;
-      calibration.error = overflow ? '8회를 초과했습니다. 5회 정도로 다시 등록해 주세요.' : `${segmenter.rejected}개 구간이 너무 짧거나 길거나 끝나지 않았습니다. 각 패턴 뒤에 쉬고 다시 등록해 주세요.`;
+      calibration.error = '8회를 초과했습니다. 5회 정도로 다시 등록해 주세요.';
     }
     self.postMessage({type:'review', generation, segments, calibration});
     mode = 'off';

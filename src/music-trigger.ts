@@ -3,7 +3,7 @@ export type MusicFrame = { pitch: number[]; chroma: number[]; rms: number };
 export type LegacyMusicTemplate = { version: 1; frames: MusicFrame[] };
 export type MusicTemplate = LegacyMusicTemplate | { version: 2; examples: MusicFrame[][]; threshold: number };
 export type MusicSegment = { frames: MusicFrame[]; start: number; end: number };
-export type Calibration = { template?: MusicTemplate; scores: number[]; error?: string };
+export type Calibration = { template?: MusicTemplate; scores: number[]; error?: string; warning?: string };
 export const MAX_EXAMPLES = 8;
 export const HOP_SECONDS = .032;
 const normalize = (values: number[]) => { const norm = Math.hypot(...values) || 1; return values.map(v => v / norm); };
@@ -62,36 +62,60 @@ export function calibrate(examples: MusicFrame[][]): Calibration {
 /** Identical pause segmentation for enrollment and live detection. Times are PCM-relative. */
 export class MusicSegmenter {
   private frames: MusicFrame[] = [];
-  private silent = 0;
-  private armed = false;
+  private quietFrames = 0;
   private peak = 0;
   private index = 0;
   private start = 0;
   private noise = .001;
+  private ambient: number[] = [];
+  private tail = 0;
   rejected = 0;
   push(frame: MusicFrame): MusicSegment | undefined {
     const index = this.index++;
-    // A decay below 8% of this event's peak counts as a pause, even with string tails.
-    const floor = Math.max(.004, this.noise * 3, this.peak * .08);
-    const quiet = frame.rms < floor;
-    if (!this.frames.length && quiet) this.noise = .98 * this.noise + .02 * Math.min(frame.rms, .004);
-    if (!this.armed) { this.silent = quiet ? this.silent + 1 : 0; if (this.silent >= 7) {this.armed = true; this.silent = 0;} return; }
-    if (!this.frames.length && quiet) return;
-    if (!this.frames.length) this.start = index;
+    // Learn the room level instead of requiring a fixed near-silence threshold.
+    // Initial 8 frames (~0.3 s including the analysis window) are room calibration.
+    if (this.ambient.length < 8) {
+      this.ambient.push(frame.rms);
+      if (this.ambient.length === 8) this.noise = Math.max(.001, [...this.ambient].sort((a,b)=>a-b)[2]);
+      return;
+    }
+    if (!this.frames.length) {
+      const onset = Math.max(.005, this.noise * 2.2, this.tail * 1.6);
+      if (frame.rms < onset) {
+        // Track changes slowly; a decaying string tail must not become a new event.
+        this.noise += (frame.rms - this.noise) * (frame.rms < this.noise ? .1 : .005);
+        this.tail *= .96;
+        return;
+      }
+      this.start = index;
+    }
     this.frames.push(frame); this.peak = Math.max(this.peak, frame.rms);
-    this.silent = quiet ? this.silent + 1 : 0;
-    if (this.frames.length > 140) { this.rejected++; this.frames = []; this.peak = 0; this.armed = false; this.silent = 0; return; }
-    if (this.silent < 7) return;
+    // A substantial drop, not absolute silence: 20% of the event peak or room floor.
+    const release = Math.max(.004, this.noise * 1.6, this.peak * .20);
+    this.quietFrames = frame.rms < release ? this.quietFrames + 1 : 0;
+    if (this.quietFrames >= 7) return this.close(this.quietFrames);
+    if (this.frames.length > 140) {
+      this.rejected++; this.tail = this.peak; this.frames = []; this.peak = 0; this.quietFrames = 0;
+    }
+  }
+  private close(trimTail: number): MusicSegment | undefined {
     const original = this.frames;
-    const trimmed = trimMusic(original);
+    const content = original.slice(0, original.length - trimTail);
+    const trimmed = trimMusic(content);
     const offset = trimmed.length ? original.indexOf(trimmed[0]) : 0;
     const start = (this.start + offset) * HOP_SECONDS;
-    this.frames = []; this.silent = 0; this.peak = 0;
+    this.tail = Math.max(this.noise, ...original.slice(-7).map(frame=>frame.rms));
+    this.frames = []; this.quietFrames = 0; this.peak = 0;
     if (!validFrames(trimmed)) { this.rejected++; return; }
     return {frames: trimmed, start, end: start + (trimmed.length - 1) * HOP_SECONDS + .064};
   }
-  finish() { if (this.frames.length) {this.rejected++; this.frames = [];} }
+  // The user's Finish action is an explicit boundary. Keep a valid final sample
+  // for review instead of rejecting the entire enrollment for a missing pause.
+  finish(): MusicSegment | undefined {
+    return this.frames.length ? this.close(this.quietFrames) : undefined;
+  }
 }
+
 const cosine = (a: number[], b: number[]) => Math.max(0, 1 - a.reduce((s, v, i) => s + v * b[i], 0));
 /** Length-bounded DTW. Relative energy retains attacks while allowing level changes. */
 export function musicDistance(a: MusicFrame[], b: MusicFrame[]): number {

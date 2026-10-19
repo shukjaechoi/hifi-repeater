@@ -15,7 +15,12 @@ test('register music, toggle takes with one live mic, persist and release',async
     }};
     (window as any).musicHarness=harness;
     navigator.mediaDevices.getUserMedia=async()=>{
-      harness.opens++;context??=new AudioContext();output=context.createMediaStreamDestination();harness.stream=output.stream;return output.stream;
+      harness.opens++;context??=new AudioContext();output=context.createMediaStreamDestination();
+      // Continuous audible background: enrollment and detection never see digital silence.
+      const room=context.createOscillator(),level=context.createGain();room.frequency.value=91;level.gain.value=.018;
+      room.connect(level).connect(output);room.start();
+      output.stream.getAudioTracks()[0].addEventListener('ended',()=>room.stop());
+      harness.stream=output.stream;return output.stream;
     };
   });
   await page.goto('/');await page.getByRole('tab',{name:'설정',exact:true}).click();

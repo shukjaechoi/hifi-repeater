@@ -167,17 +167,17 @@
     "matching": "One-to-one match: detection delivered between insertion end - 0.1 s and end + 0.65 s; other detections are false positives."
   },
   "sourceHashes": {
-    "src/music-trigger.ts": "e596555bce213dd71530d7809e17e2ff84e6af77ed9134318b688443081a4838",
-    "src/trigger-worker.ts": "2784cf0b508b6ca8dcabd96ff8b36525c3c44f2ddb4397915ea3005d13a46aad"
+    "src/music-trigger.ts": "ae676b06c9ba29c3e202d7a573669715486bec68fa8e32863ecaa50cbdecc74b",
+    "src/trigger-worker.ts": "30b97f950c3f74d26238a49534c569b9a15bb96ef1033dfe2ad20b886243fc20"
   },
   "templateVersion": 2,
   "threshold": 0.1,
   "templateFrames": [
-    39,
     38,
-    38,
-    39,
-    39
+    37,
+    37,
+    37,
+    38
   ],
   "results": [
     {
@@ -189,7 +189,7 @@
       "misses": 0,
       "expected": [],
       "falsePositiveTimes": [],
-      "runtimeMs": 1322.458042
+      "runtimeMs": 1594.6819170000003
     },
     {
       "name": "gapped",
@@ -203,15 +203,15 @@
           "start": 3,
           "end": 4.2,
           "gain": 1,
-          "oracleBoundaryDistance": 0.010329193989259312,
-          "detectedAt": 4.522666666666667,
-          "latency": 0.32266666666666666
+          "oracleBoundaryDistance": 0.005073927723090759,
+          "detectedAt": 4.437333333333333,
+          "latency": 0.23733333333333295
         },
         {
           "start": 9,
           "end": 10.2,
           "gain": 1,
-          "oracleBoundaryDistance": 0.010329193989259312,
+          "oracleBoundaryDistance": 0.005073927723090759,
           "detectedAt": 10.496,
           "latency": 0.29600000000000115
         },
@@ -219,7 +219,7 @@
           "start": 15,
           "end": 16.2,
           "gain": 1,
-          "oracleBoundaryDistance": 0.010329193989259312,
+          "oracleBoundaryDistance": 0.005073927723090759,
           "detectedAt": 16.469333333333335,
           "latency": 0.26933333333333564
         },
@@ -227,21 +227,21 @@
           "start": 21,
           "end": 22.2,
           "gain": 1,
-          "oracleBoundaryDistance": 0.010329193989259312,
-          "detectedAt": 22.528,
-          "latency": 0.3279999999999994
+          "oracleBoundaryDistance": 0.005073927723090759,
+          "detectedAt": 22.442666666666668,
+          "latency": 0.24266666666666836
         },
         {
           "start": 28,
           "end": 29.2,
           "gain": 1,
-          "oracleBoundaryDistance": 0.010329193989259312,
-          "detectedAt": 29.525333333333332,
-          "latency": 0.32533333333333303
+          "oracleBoundaryDistance": 0.005073927723090759,
+          "detectedAt": 29.44,
+          "latency": 0.240000000000002
         }
       ],
       "falsePositiveTimes": [],
-      "runtimeMs": 1379.342125
+      "runtimeMs": 1476.367083
     },
     {
       "name": "gapped_levels",
@@ -255,15 +255,15 @@
           "start": 3,
           "end": 4.2,
           "gain": 0.5,
-          "oracleBoundaryDistance": 0.010329193989259312,
-          "detectedAt": 4.522666666666667,
-          "latency": 0.32266666666666666
+          "oracleBoundaryDistance": 0.005073927723090759,
+          "detectedAt": 4.437333333333333,
+          "latency": 0.23733333333333295
         },
         {
           "start": 9,
           "end": 10.2,
           "gain": 0.75,
-          "oracleBoundaryDistance": 0.01032919399385335,
+          "oracleBoundaryDistance": 0.0050739277265433955,
           "detectedAt": 10.496,
           "latency": 0.29600000000000115
         },
@@ -271,7 +271,7 @@
           "start": 15,
           "end": 16.2,
           "gain": 1,
-          "oracleBoundaryDistance": 0.010329193989259312,
+          "oracleBoundaryDistance": 0.005073927723090759,
           "detectedAt": 16.469333333333335,
           "latency": 0.26933333333333564
         },
@@ -279,35 +279,35 @@
           "start": 21,
           "end": 22.2,
           "gain": 0.6,
-          "oracleBoundaryDistance": 0.010329194041638484,
-          "detectedAt": 22.528,
-          "latency": 0.3279999999999994
+          "oracleBoundaryDistance": 0.005073927713382333,
+          "detectedAt": 22.442666666666668,
+          "latency": 0.24266666666666836
         },
         {
           "start": 28,
           "end": 29.2,
           "gain": 0.9,
-          "oracleBoundaryDistance": 0.010329193998004605,
-          "detectedAt": 29.525333333333332,
-          "latency": 0.32533333333333303
+          "oracleBoundaryDistance": 0.0050739277497487975,
+          "detectedAt": 29.44,
+          "latency": 0.240000000000002
         }
       ],
       "falsePositiveTimes": [],
-      "runtimeMs": 1270.8548340000002
+      "runtimeMs": 1387.9657499999994
     },
     {
       "name": "continuous_replace",
       "insertions": 5,
-      "detections": 0,
-      "truePositives": 0,
+      "detections": 1,
+      "truePositives": 1,
       "falsePositives": 0,
-      "misses": 5,
+      "misses": 4,
       "expected": [
         {
           "start": 3,
           "end": 4.2,
           "gain": 1,
-          "oracleBoundaryDistance": 0.010329193989259312,
+          "oracleBoundaryDistance": 0.005073927723090759,
           "detectedAt": null,
           "latency": null
         },
@@ -315,7 +315,7 @@
           "start": 9,
           "end": 10.2,
           "gain": 1,
-          "oracleBoundaryDistance": 0.010329193989259312,
+          "oracleBoundaryDistance": 0.005073927723090759,
           "detectedAt": null,
           "latency": null
         },
@@ -323,15 +323,15 @@
           "start": 15,
           "end": 16.2,
           "gain": 1,
-          "oracleBoundaryDistance": 0.010329193989259312,
-          "detectedAt": null,
-          "latency": null
+          "oracleBoundaryDistance": 0.005073927723090759,
+          "detectedAt": 16.469333333333335,
+          "latency": 0.26933333333333564
         },
         {
           "start": 21,
           "end": 22.2,
           "gain": 1,
-          "oracleBoundaryDistance": 0.010329193989259312,
+          "oracleBoundaryDistance": 0.005073927723090759,
           "detectedAt": null,
           "latency": null
         },
@@ -339,27 +339,27 @@
           "start": 28,
           "end": 29.2,
           "gain": 1,
-          "oracleBoundaryDistance": 0.010329193989259312,
+          "oracleBoundaryDistance": 0.005073927723090759,
           "detectedAt": null,
           "latency": null
         }
       ],
       "falsePositiveTimes": [],
-      "runtimeMs": 1266.043041
+      "runtimeMs": 1337.0374170000005
     },
     {
       "name": "overlay",
       "insertions": 5,
-      "detections": 0,
-      "truePositives": 0,
+      "detections": 1,
+      "truePositives": 1,
       "falsePositives": 0,
-      "misses": 5,
+      "misses": 4,
       "expected": [
         {
           "start": 3,
           "end": 4.2,
           "gain": 1,
-          "oracleBoundaryDistance": 0.04752634747163362,
+          "oracleBoundaryDistance": 0.04270541378025981,
           "detectedAt": null,
           "latency": null
         },
@@ -367,7 +367,7 @@
           "start": 9,
           "end": 10.2,
           "gain": 1,
-          "oracleBoundaryDistance": 0.08804345931309195,
+          "oracleBoundaryDistance": 0.08635105126881586,
           "detectedAt": null,
           "latency": null
         },
@@ -375,15 +375,15 @@
           "start": 15,
           "end": 16.2,
           "gain": 1,
-          "oracleBoundaryDistance": 0.05579861201759334,
-          "detectedAt": null,
-          "latency": null
+          "oracleBoundaryDistance": 0.05439919681181589,
+          "detectedAt": 16.469333333333335,
+          "latency": 0.26933333333333564
         },
         {
           "start": 21,
           "end": 22.2,
           "gain": 1,
-          "oracleBoundaryDistance": 0.1007837416834461,
+          "oracleBoundaryDistance": 0.0977091506079754,
           "detectedAt": null,
           "latency": null
         },
@@ -391,13 +391,13 @@
           "start": 28,
           "end": 29.2,
           "gain": 1,
-          "oracleBoundaryDistance": 0.1676064342709398,
+          "oracleBoundaryDistance": 0.16741205454594443,
           "detectedAt": null,
           "latency": null
         }
       ],
       "falsePositiveTimes": [],
-      "runtimeMs": 1312.930166
+      "runtimeMs": 1309.2988749999995
     }
   ]
 }

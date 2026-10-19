@@ -55,7 +55,7 @@ test('shared pause segmentation counts repeats and rejects incomplete or oversiz
   assert.ok(segments.every(s=>s.end>s.start&&s.end<pcm.length/16000));
   const unfinished=new MusicSegmenter();
   for(const frame of new MusicFeatures().push(pcm.slice(0,gap.length+sound.length/2),16000))unfinished.push(frame);
-  unfinished.finish();assert.equal(unfinished.rejected,1);
+  assert.ok(unfinished.finish());assert.equal(unfinished.rejected,0);
 });
 
 test('threshold grows with observed variation while staying bounded',()=>{
@@ -75,4 +75,45 @@ test('a fading string tail counts as a pause without requiring absolute silence'
   for(let i=0;i<12;i++)segmenter.push({...frame,rms:.2});
   for(let i=0;i<8;i++)found=segmenter.push({...frame,rms:.006})??found;
   assert.ok(found);assert.equal(found.frames.length,12);
+});
+
+test('room noise and audible tails allow five repetitions without full silence',()=>{
+  const frame=extract(pattern([330]))[0], detector=new MusicSegmenter(), segments=[];
+  const push=(rms:number,n:number)=>{for(let i=0;i<n;i++){const s=detector.push({...frame,rms});if(s)segments.push(s);}};
+  push(.012,16); // Well above the previous absolute quiet threshold.
+  for(let i=0;i<5;i++){push(.2,20);push(.03,12);}
+  push(.012,150);
+  assert.equal(segments.length,5);assert.equal(detector.rejected,0);
+  assert.ok(segments.every(s=>s.frames.length===20));
+});
+test('constant room noise is not enrolled; a valid last sample can end at the button',()=>{
+  const frame=extract(pattern([330]))[0], detector=new MusicSegmenter();
+  for(let i=0;i<200;i++)assert.equal(detector.push({...frame,rms:.025}),undefined);
+  assert.equal(detector.finish(),undefined);assert.equal(detector.rejected,0);
+  for(let i=0;i<15;i++)detector.push({...frame,rms:.18});
+  assert.equal(detector.finish()?.frames.length,15);
+});
+test('brief dips in a melody do not split it and overlong input stays bounded',()=>{
+  const frame=extract(pattern([330]))[0], detector=new MusicSegmenter();let count=0;
+  const push=(rms:number,n:number)=>{for(let i=0;i<n;i++)if(detector.push({...frame,rms}))count++;};
+  push(.01,12);push(.2,10);push(.025,3);push(.18,10);push(.025,8);
+  assert.equal(count,1);
+  push(.3,400);assert.ok(detector.rejected>=1);assert.equal(count,1);
+});
+
+test('worker keeps valid repetitions when a short fragment is discarded and Finish ends the last sample',async()=>{
+  const {readFile}=await import('node:fs/promises');const {runInNewContext}=await import('node:vm');const ts=await import('typescript');
+  const compile=async(name:string)=>ts.transpileModule(await readFile(new URL(`../src/${name}.ts`,import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+  const exports:any={};runInNewContext(await compile('music-trigger'),{exports,Float32Array,Float64Array});
+  const messages:any[]=[];const self:any={postMessage:(message:any)=>messages.push(message)};
+  runInNewContext(await compile('trigger-worker'),{exports:{},require:()=>exports,self,Float32Array,Float64Array});
+  const gap=new Float32Array(8000),sound=pattern([330,392,523]);
+  const parts=[gap,sound,gap,sound,gap,sound,gap,pattern([330],.12),gap,sound];
+  const pcm=new Float32Array(parts.reduce((n,p)=>n+p.length,0));let offset=0;
+  for(const part of parts){pcm.set(part,offset);offset+=part.length;}
+  self.onmessage({data:{type:'reset',generation:1,mode:'enroll'}});
+  for(let i=0;i<pcm.length;i+=4096)self.onmessage({data:{type:'pcm',generation:1,rate:16000,samples:pcm.slice(i,i+4096)}});
+  self.onmessage({data:{type:'finish',generation:1}});
+  const review=messages.find(m=>m.type==='review');
+  assert.equal(review.segments.length,4);assert.ok(review.calibration.template);assert.match(review.calibration.warning,/제외/);
 });

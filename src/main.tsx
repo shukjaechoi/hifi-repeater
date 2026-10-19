@@ -152,19 +152,20 @@ function App() {
       </> : <section className="settings-page">
         <section className="settings-card" aria-labelledby="trigger-title">
           <div className="settings-title"><h2 id="trigger-title">Trigger sound · 음악으로 녹음 제어</h2><p>짧은 화음이나 음악 패턴을 등록하세요. 같은 패턴으로 녹음을 시작하고, 다시 연주하면 정지하고 재생합니다.</p></div>
-          <p className="filter-description">같은 화음이나 짧은 멜로디를 5번 연주해 주세요. 매번 소리를 끊고 약 0.5초 쉬어 주세요. 최소 3회, 최대 8회이며 각 패턴은 0.2~4초입니다.</p>
+          <p className="filter-description">같은 화음이나 짧은 멜로디를 5번 연주해 주세요. 처음 0.5초는 주변 소리를 듣습니다. 그다음 매번 약 0.5초 쉬어 주세요. 잔향이나 작은 주변 소리는 남아 있어도 됩니다. 최소 3회, 최대 8회이며 각 패턴은 0.2~4초입니다.</p>
           <div className="trigger-actions"><button disabled={trigger.connecting||trigger.analyzing||trigger.testing} onClick={()=>{if(trigger.enrolling) trigger.finishEnrollment(); else {stop();void trigger.open(true);}}}>{trigger.analyzing?'분석 중…':trigger.enrolling?'등록 녹음 마치기':trigger.connecting?'마이크 연결 중':trigger.review?'다시 녹음하기':'트리거 소리 녹음하기'}</button>
           {(trigger.enrolling||trigger.connecting||trigger.analyzing||trigger.review) && <button onClick={trigger.cancel}>등록 취소</button>}
           {trigger.template && <button disabled={trigger.enrolling||trigger.connecting||trigger.analyzing||trigger.testing||!!trigger.review} onClick={trigger.remove}>트리거 삭제</button>}</div>
           {trigger.review && <div className="trigger-review">
             <p><strong>{trigger.review.segments.length}회를 감지했습니다. 입력한 횟수와 구간이 맞나요?</strong></p>
             <ol>{trigger.review.segments.map((segment,index)=><li key={index}><span>{index+1}번 · {(segment.end-segment.start).toFixed(2)}초</span> <button onClick={()=>void trigger.preview(index)}>{trigger.previewing===index?'재생 중…':`${index+1}번 들어보기`}</button></li>)}</ol>
+            {trigger.review.calibration.warning && <p className="filter-description" role="status">{trigger.review.calibration.warning}</p>}
             {trigger.review.calibration.error && <p role="alert" className="message error">{trigger.review.calibration.error}</p>}
             <div className="trigger-actions"><button disabled={!trigger.review.calibration.template} onClick={trigger.confirm}>{trigger.review.segments.length}회가 맞습니다 · 등록</button><button onClick={()=>void trigger.open(true)}>횟수나 구간이 달라요 · 다시 녹음</button></div>
             <p className="filter-description">확인한 모든 샘플로 허용 차이를 보정합니다. 잘못 나뉜 구간이 있으면 다시 녹음해 주세요. 확인 전에는 기존 등록을 바꾸지 않습니다.</p>
           </div>}
           <label className="filter-option"><input type="checkbox" checked={trigger.enabled} disabled={!trigger.template||trigger.enrolling||trigger.connecting||trigger.analyzing||trigger.testing||!!trigger.review} onChange={e=>{if(e.target.checked){stop();void trigger.open(false);}else trigger.cancel();}}/><span><strong>Trigger sound 활성화</strong><small>마이크 연결을 유지합니다. 연습 화면에서 감지하며 재생 중에는 감지를 쉽니다.</small></span></label>
-          <p className="filter-description" role="status">{trigger.analyzing?'반복 샘플을 분석하고 있습니다.':trigger.enrolling?`등록 중 · ${trigger.count}회 감지 · 마지막 소리 뒤에도 쉬고 마쳐 주세요. 최대 30초.`:trigger.enabled?'마이크 켜짐 · 연습 화면에서 감지합니다.':trigger.template?`등록됨 · ${trigger.template.version===2?`${trigger.template.examples.length}회 샘플로 보정됨`:'이전 단일 샘플 · 재등록을 권장합니다.'}`:'아직 등록된 음악 패턴이 없습니다.'}</p>
+          <p className="filter-description" role="status">{trigger.analyzing?'반복 샘플을 분석하고 있습니다.':trigger.enrolling?`등록 중 · ${trigger.count}회 감지 · 마지막 소리는 등록 녹음 마치기로 끝낼 수 있습니다. 최대 30초.`:trigger.enabled?'마이크 켜짐 · 연습 화면에서 감지합니다.':trigger.template?`등록됨 · ${trigger.template.version===2?`${trigger.template.examples.length}회 샘플로 보정됨`:'이전 단일 샘플 · 재등록을 권장합니다.'}`:'아직 등록된 음악 패턴이 없습니다.'}</p>
           {trigger.template && !trigger.review && <div className="trigger-actions"><button disabled={trigger.enrolling||trigger.connecting||trigger.analyzing} onClick={()=>trigger.testing?trigger.cancel():void trigger.open(false,true)}>{trigger.testing?'감지 시험 종료':'감지 시험'}</button><span role="status">{trigger.testing?`시험 중 · ${trigger.testCount}회 감지 · 녹음을 시작하거나 정지하지 않습니다. (최대 30초)`:'등록 후 같은 패턴과 다른 화음을 연주해 감지 여부를 확인하세요.'}</span></div>}
           <p className="filter-description">실험 기능 · 패턴 앞뒤에 잠깐 쉬어 주세요. 연주에 같은 패턴이 나오면 오인식할 수 있습니다. 화면 잠금·백그라운드에서는 중단될 수 있으며 앱을 다시 열면 활성화가 필요합니다.</p>
           {trigger.error && <p role="alert" className="message error">{trigger.error}</p>}
